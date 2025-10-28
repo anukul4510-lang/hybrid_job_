@@ -3,7 +3,10 @@
  * Handles all HTTP requests to the backend API
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// Use the same protocol and host as the frontend to avoid CORS issues
+const API_BASE_URL = window.location.hostname === '127.0.0.1' 
+    ? 'http://127.0.0.1:8000/api' 
+    : 'http://localhost:8000/api';
 
 class ApiClient {
     /**

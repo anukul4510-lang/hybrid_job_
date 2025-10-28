@@ -14,7 +14,7 @@ import mysql.connector
 def create_user_profile(user_id: int, profile_data: UserProfileCreate) -> dict:
     """Create a user profile."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -45,7 +45,7 @@ def create_user_profile(user_id: int, profile_data: UserProfileCreate) -> dict:
 def get_user_profile(user_id: int) -> Optional[dict]:
     """Get user profile by user ID."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -61,7 +61,7 @@ def get_user_profile(user_id: int) -> Optional[dict]:
 def update_user_profile(user_id: int, profile_data: UserProfileUpdate) -> dict:
     """Update user profile."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         update_fields = []
@@ -108,7 +108,7 @@ def update_user_profile(user_id: int, profile_data: UserProfileUpdate) -> dict:
 def create_skill(skill_data: SkillCreate) -> dict:
     """Create a new skill."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -135,7 +135,7 @@ def create_skill(skill_data: SkillCreate) -> dict:
 def get_all_skills() -> List[dict]:
     """Get all skills."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute("SELECT * FROM skills ORDER BY name")
@@ -148,7 +148,7 @@ def get_all_skills() -> List[dict]:
 def add_user_skill(user_id: int, user_skill_data: UserSkillCreate) -> dict:
     """Add a skill to a user."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -183,7 +183,7 @@ def add_user_skill(user_id: int, user_skill_data: UserSkillCreate) -> dict:
 def get_user_skills(user_id: int) -> List[dict]:
     """Get all skills for a user."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -204,7 +204,7 @@ def get_user_skills(user_id: int) -> List[dict]:
 def remove_user_skill(user_id: int, skill_id: int):
     """Remove a skill from a user."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(

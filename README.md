@@ -246,26 +246,49 @@ uvicorn backend.main:app --reload
 
 ## Troubleshooting
 
+### Quick Diagnostics
+
+**Step 1: Run Startup Check**
+```bash
+python startup_check.py
+```
+
+**Step 2: Test Backend Imports**
+```bash
+python test_backend.py
+```
+
+**Step 3: Check Detailed Solutions**
+- **QUICK_START.md** - Step-by-step setup and common error fixes
+- **ERROR_EXPLANATION.md** - Understanding CORS and 500 errors
+- **TROUBLESHOOTING.md** - Comprehensive troubleshooting guide
+
 ### Common Issues
 
+**CORS Errors**
+- Use matching hostnames (both `127.0.0.1` or both `localhost`)
+- Clear browser cache and hard reload (Ctrl+F5)
+- See ERROR_EXPLANATION.md for details
+
+**500 Internal Server Error**
+- Check backend console for Python errors
+- Verify `.env` file exists and is configured
+- Ensure MySQL is running and database exists
+- See QUICK_START.md for step-by-step fix
+
 **MySQL Connection Error**
-- Verify MySQL is running
+- Verify MySQL is running: `mysql -u root -p`
 - Check credentials in `.env` file
-- Ensure database exists
+- Create database: `CREATE DATABASE hybrid_job_system;`
 
 **ChromaDB Errors**
 - Check write permissions for `chroma_db` directory
-- Delete and recreate the database if corrupted
-
-**API Connection Issues**
-- Verify backend is running on port 8000
-- Check CORS settings in `backend/main.py`
-- Ensure frontend uses correct API URL
+- Delete and recreate: `rm -rf chroma_db/`
 
 **Gemini API Errors**
-- Verify API key is correct
-- Check API quota limits
-- System will fallback to SQL-only search if API fails
+- Get API key from https://makersuite.google.com/app/apikey
+- Add to `.env`: `GEMINI_API_KEY=your-key`
+- System falls back to SQL-only search if API fails
 
 ## License
 

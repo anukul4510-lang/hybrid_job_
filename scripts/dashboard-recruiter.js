@@ -37,9 +37,9 @@ async function showMyJobs() {
                 <p>Status: <strong>${job.status}</strong></p>
                 <p>Posted: ${formatDate(job.posted_date)}</p>
                 <div class="actions">
-                    <button class="btn btn-primary" onclick="viewApplications(${job.id})">View Applications</button>
-                    <button class="btn btn-secondary" onclick="editJob(${job.id})">Edit</button>
-                    <button class="btn btn-danger" onclick="deleteJob(${job.id})">Delete</button>
+                    <button class="btn btn-primary" data-job-id="${job.id}" onclick="viewApplications(this.dataset.jobId)">View Applications</button>
+                    <button class="btn btn-secondary" data-job-id="${job.id}" onclick="editJob(this.dataset.jobId)">Edit</button>
+                    <button class="btn btn-danger" data-job-id="${job.id}" onclick="deleteJob(this.dataset.jobId)">Delete</button>
                 </div>
             </div>
         `).join('');

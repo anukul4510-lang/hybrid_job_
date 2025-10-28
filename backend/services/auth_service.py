@@ -74,7 +74,7 @@ def register_user(user_data: UserCreate) -> dict:
         dict: New user information
     """
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     
     try:
         # Check if user already exists
@@ -101,11 +101,18 @@ def register_user(user_data: UserCreate) -> dict:
         user_id = cursor.lastrowid
         conn.commit()
         
-        return {
-            "id": user_id,
-            "email": user_data.email,
-            "role": user_data.role
-        }
+        # Fetch the complete user record to get created_at
+        cursor.execute(
+            """
+            SELECT id, email, role, created_at
+            FROM users
+            WHERE id = %s
+            """,
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        
+        return user
     except mysql.connector.Error as e:
         conn.rollback()
         raise ValueError(f"Database error: {e}")
@@ -117,7 +124,6 @@ def register_user(user_data: UserCreate) -> dict:
 def authenticate_user(user_data: UserLogin) -> Optional[dict]:
     """
     Authenticate a user and return user information.
-    
     Args:
         user_data: Login credentials
         
@@ -125,7 +131,7 @@ def authenticate_user(user_data: UserLogin) -> Optional[dict]:
         dict: User information if authenticated, None otherwise
     """
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     
     try:
         # Fetch user
@@ -167,7 +173,7 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
         dict: User information
     """
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     
     try:
         cursor.execute(

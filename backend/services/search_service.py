@@ -27,9 +27,13 @@ def generate_embedding(text: str) -> List[float]:
         List of float embeddings
     """
     try:
-        model = genai.GenerativeModel('models/embedding-001')
-        response = model.generate_embeddings([text])
-        return response['embeddings'][0]['values']
+        # Use the correct embedding model and method
+        result = genai.embed_content(
+            model="models/embedding-001",
+            content=text,
+            task_type="retrieval_document"
+        )
+        return result['embedding']
     except Exception as e:
         print(f"Error generating embedding: {e}")
         # Fallback to zero vector
@@ -41,7 +45,7 @@ def index_job_posting(job_id: int):
     try:
         # Get job details from MySQL
         conn = MySQLConnection.get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         cursor.execute(
             "SELECT title, description, company, location FROM job_postings WHERE id = %s",
             (job_id,)
@@ -114,7 +118,7 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
         
         # Apply SQL filters
         conn = MySQLConnection.get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         
         where_clause = "WHERE status = 'active'"
         params = []
@@ -169,7 +173,7 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
 def sql_only_search(filters: Optional[Dict] = None, limit: int = 10) -> Dict:
     """Fallback SQL-only search when vector search fails."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     where_clause = "WHERE status = 'active'"
     params = []
@@ -217,7 +221,7 @@ def get_recommendations(user_id: int, limit: int = 10) -> List[Dict]:
     """
     try:
         conn = MySQLConnection.get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         
         # Get user skills
         cursor.execute(

@@ -14,7 +14,7 @@ import mysql.connector
 def create_job_posting(recruiter_id: int, job_data: JobPostingCreate) -> dict:
     """Create a new job posting."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -56,7 +56,7 @@ def create_job_posting(recruiter_id: int, job_data: JobPostingCreate) -> dict:
 def get_job_posting(job_id: int) -> Optional[dict]:
     """Get a job posting by ID."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -72,7 +72,7 @@ def get_job_posting(job_id: int) -> Optional[dict]:
 def get_all_job_postings(filters: Optional[Dict] = None, limit: int = 50) -> List[dict]:
     """Get all job postings with optional filters."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         query = "SELECT * FROM job_postings WHERE status = 'active'"
@@ -102,7 +102,7 @@ def get_all_job_postings(filters: Optional[Dict] = None, limit: int = 50) -> Lis
 def update_job_posting(job_id: int, recruiter_id: int, job_data: JobPostingUpdate) -> dict:
     """Update a job posting."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Verify ownership
@@ -165,7 +165,7 @@ def update_job_posting(job_id: int, recruiter_id: int, job_data: JobPostingUpdat
 def delete_job_posting(job_id: int, recruiter_id: int):
     """Delete a job posting."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Verify ownership
@@ -190,7 +190,7 @@ def delete_job_posting(job_id: int, recruiter_id: int):
 def create_application(jobseeker_id: int, application_data: ApplicationCreate) -> dict:
     """Create a new job application."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Check if job exists and is active
@@ -234,7 +234,7 @@ def create_application(jobseeker_id: int, application_data: ApplicationCreate) -
 def get_user_applications(user_id: int) -> List[dict]:
     """Get all applications for a user."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -256,7 +256,7 @@ def get_user_applications(user_id: int) -> List[dict]:
 def save_job(jobseeker_id: int, job_id: int) -> dict:
     """Save a job for later."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -289,7 +289,7 @@ def save_job(jobseeker_id: int, job_id: int) -> dict:
 def get_saved_jobs(jobseeker_id: int) -> List[dict]:
     """Get all saved jobs for a user."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(

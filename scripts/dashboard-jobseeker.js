@@ -49,7 +49,57 @@ async function showProfile() {
         
         content.innerHTML = profileHTML;
     } catch (error) {
-        content.innerHTML = `<div class="error-message">Error loading profile: ${error.message}</div>`;
+        // Profile doesn't exist yet, show create profile form
+        const createProfileHTML = `
+            <div class="profile-form">
+                <p class="info-message">Complete your profile to get started!</p>
+                <div class="form-group">
+                    <label>First Name:</label>
+                    <input type="text" id="first-name" placeholder="Enter your first name">
+                </div>
+                <div class="form-group">
+                    <label>Last Name:</label>
+                    <input type="text" id="last-name" placeholder="Enter your last name">
+                </div>
+                <div class="form-group">
+                    <label>Phone:</label>
+                    <input type="text" id="phone" placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" id="location" placeholder="e.g., San Francisco, CA">
+                </div>
+                <div class="form-group full-width">
+                    <label>Bio:</label>
+                    <textarea id="bio" rows="5" placeholder="Tell us about yourself..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="createProfile()">Create Profile</button>
+            </div>
+        `;
+        
+        content.innerHTML = createProfileHTML;
+    }
+}
+
+/**
+ * Create new profile
+ */
+async function createProfile() {
+    const profileData = {
+        first_name: document.getElementById('first-name').value,
+        last_name: document.getElementById('last-name').value,
+        phone: document.getElementById('phone').value,
+        location: document.getElementById('location').value,
+        bio: document.getElementById('bio').value
+    };
+    
+    try {
+        await apiClient.createProfile(profileData);
+        showSuccess('Profile created successfully!', document.getElementById('content'));
+        // Reload profile view
+        await showProfile();
+    } catch (error) {
+        showError('Failed to create profile: ' + error.message, document.getElementById('content'));
     }
 }
 
@@ -353,6 +403,7 @@ window.showMyApplications = showMyApplications;
 window.showSavedJobs = showSavedJobs;
 window.showSkills = showSkills;
 window.showRecommendations = showRecommendations;
+window.createProfile = createProfile;
 window.updateProfile = updateProfile;
 window.applyToJob = applyToJob;
 window.saveJob = saveJob;

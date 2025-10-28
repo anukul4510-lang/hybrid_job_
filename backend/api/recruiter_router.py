@@ -37,7 +37,7 @@ async def get_my_jobs(current_user: TokenData = Depends(get_current_recruiter)):
     """Get all job postings by current recruiter."""
     from backend.database.mysql_connection import MySQLConnection
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     cursor.execute(
         "SELECT * FROM job_postings WHERE recruiter_id = %s ORDER BY created_at DESC",
         (current_user.user_id,)

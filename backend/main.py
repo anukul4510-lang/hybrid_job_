@@ -23,10 +23,17 @@ app = FastAPI(
 # Configure CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5500", "http://127.0.0.1:5500", "file://"],
+    allow_origins=[
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "*"  # Allow all for development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
@@ -47,7 +54,7 @@ async def startup_event():
 @app.get("/")
 async def root():
     """Root endpoint for health check."""
-    return {"message": "Hybrid Job Application System API", "status": "running"}
+    return {"message": "Hybrid Job Application System API", "status": "running", "version": "1.0.0"}
 
 
 @app.get("/health")
