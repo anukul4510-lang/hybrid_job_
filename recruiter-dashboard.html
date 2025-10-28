@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Dashboard - Hybrid Job System</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .sidebar {
+            background: #764ba2;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .sidebar button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            color: #764ba2;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .sidebar button:hover {
+            background: #667eea;
+            color: white;
+        }
+        .content-area {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Recruiter Dashboard</h1>
+            <p>Manage your job postings and applications</p>
+        </header>
+
+        <nav>
+            <button onclick="logout()" class="nav-btn">Logout</button>
+        </nav>
+
+        <div class="dashboard-container">
+            <div class="sidebar">
+                <button onclick="showMyJobs()">My Job Postings</button>
+                <button onclick="showCreateJob()">Create New Job</button>
+                <button onclick="showApplications()">Applications</button>
+            </div>
+
+            <div class="content-area" id="content">
+                <h2>Welcome to Your Recruiter Dashboard</h2>
+                <p>Use the sidebar to navigate to different sections.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="scripts/api-client.js"></script>
+    <script type="module" src="scripts/dashboard-recruiter.js"></script>
+    <script src="scripts/utils.js"></script>
+</body>
+</html>
+

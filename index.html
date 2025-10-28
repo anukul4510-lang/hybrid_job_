@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Job Application System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>HYBRID JOB APPLICATION SYSTEM</h1>
+            <p>AI-Powered Job Matching Platform</p>
+        </header>
+
+        <nav id="navigation">
+            <button onclick="window.location.href='index.html'" class="nav-btn active">Home</button>
+            <button onclick="showLogin()" class="nav-btn">Login</button>
+            <button onclick="showRegister()" class="nav-btn">Register</button>
+        </nav>
+
+        <main>
+            <!-- Login Form -->
+            <section id="login-section" class="auth-section hidden">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email:</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password:</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="switch-auth">
+                    Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+                </p>
+            </section>
+
+            <!-- Registration Form -->
+            <section id="register-section" class="auth-section hidden">
+                <h2>Register</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-email">Email:</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password:</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-role">Role:</label>
+                        <select id="register-role" required>
+                            <option value="jobseeker">Job Seeker</option>
+                            <option value="recruiter">Recruiter</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p class="switch-auth">
+                    Already have an account? <a href="#" onclick="showLogin()">Login</a>
+                </p>
+            </section>
+
+            <!-- Home/Welcome Section -->
+            <section id="home-section" class="welcome-section">
+                <div class="hero">
+                    <h2>Find Your Dream Job with AI-Powered Matching</h2>
+                    <p>The most advanced job platform that combines traditional search with AI-powered recommendations</p>
+                    <div class="features">
+                        <div class="feature-card">
+                            <h3>🔍 Hybrid Search</h3>
+                            <p>Search using natural language with AI-powered semantic matching</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🎯 Smart Recommendations</h3>
+                            <p>Get personalized job recommendations based on your skills</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>⚡ Fast Matching</h3>
+                            <p>Vector search technology for instant relevant results</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Hybrid Job Application System. Built with FastAPI & AI.</p>
+        </footer>
+    </div>
+
+    <script type="module" src="scripts/api-client.js"></script>
+    <script type="module" src="scripts/auth.js"></script>
+    <script src="scripts/utils.js"></script>
+</body>
+</html>
+
