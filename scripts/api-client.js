@@ -70,6 +70,15 @@ class ApiClient {
             const data = await response.json();
 
             if (!response.ok) {
+                // Handle 401 Unauthorized - redirect to login
+                if (response.status === 401) {
+                    console.error('Authentication failed. Redirecting to login...');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_role');
+                    window.location.href = 'index.html';
+                    return;
+                }
                 throw new Error(data.detail || `HTTP ${response.status}`);
             }
 
@@ -222,9 +231,109 @@ class ApiClient {
         });
     }
 
+    // Resume endpoints
+    async createResume(title, content, fileUrl) {
+        const params = new URLSearchParams({ title });
+        if (content) params.append('content', content);
+        if (fileUrl) params.append('file_url', fileUrl);
+        return this.request(`/jobseeker/resumes?${params}`, {
+            method: 'POST',
+        });
+    }
+
+    async getResumes() {
+        return this.request('/jobseeker/resumes');
+    }
+
+    async updateResume(resumeId, title, content) {
+        const params = new URLSearchParams();
+        if (title) params.append('title', title);
+        if (content) params.append('content', content);
+        return this.request(`/jobseeker/resumes/${resumeId}?${params}`, {
+            method: 'PUT',
+        });
+    }
+
+    async deleteResume(resumeId) {
+        return this.request(`/jobseeker/resumes/${resumeId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async setPrimaryResume(resumeId) {
+        return this.request(`/jobseeker/resumes/${resumeId}/primary`, {
+            method: 'PUT',
+        });
+    }
+
+    // Skill recommendations
+    async getSkillRecommendations(query, limit = 10) {
+        const params = new URLSearchParams({ limit });
+        if (query) params.append('query', query);
+        return this.request(`/jobseeker/skills/recommendations?${params}`);
+    }
+
+    async createSkill(skillName) {
+        const params = new URLSearchParams({ skill_name: skillName });
+        return this.request(`/jobseeker/skills/create?${params}`, {
+            method: 'POST',
+        });
+    }
+
+    // Application search
+    async searchApplications(status, company) {
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (company) params.append('company', company);
+        return this.request(`/jobseeker/applications/search?${params}`);
+    }
+
+    // Recruiter user search
+    async searchCandidates(query, location, minExperience, limit = 20) {
+        const params = new URLSearchParams({ query, limit });
+        if (location) params.append('location', location);
+        if (minExperience) params.append('min_experience', minExperience);
+        return this.request(`/recruiter/users/search?${params}`);
+    }
+
+    async getCandidateProfile(userId) {
+        return this.request(`/recruiter/users/${userId}`);
+    }
+
+    // Shortlist management
+    async addToShortlist(candidateId, jobId, matchScore, notes) {
+        const params = new URLSearchParams({ candidate_id: candidateId });
+        if (jobId) params.append('job_id', jobId);
+        if (matchScore) params.append('match_score', matchScore);
+        if (notes) params.append('notes', notes);
+        return this.request(`/recruiter/shortlist?${params}`, {
+            method: 'POST',
+        });
+    }
+
+    async getShortlist(status) {
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        return this.request(`/recruiter/shortlist?${params}`);
+    }
+
+    async updateShortlistStatus(shortlistId, status, notes) {
+        const params = new URLSearchParams({ status });
+        if (notes) params.append('notes', notes);
+        return this.request(`/recruiter/shortlist/${shortlistId}?${params}`, {
+            method: 'PUT',
+        });
+    }
+
+    async removeFromShortlist(shortlistId) {
+        return this.request(`/recruiter/shortlist/${shortlistId}`, {
+            method: 'DELETE',
+        });
+    }
+
     // Admin endpoints
-    async getAllUsers() {
-        return this.request('/admin/users');
+    async getAllUsers(limit = 100, offset = 0) {
+        return this.request(`/admin/users?limit=${limit}&offset=${offset}`);
     }
 
     async getStats() {
@@ -235,6 +344,33 @@ class ApiClient {
         return this.request(`/admin/users/${userId}/role`, {
             method: 'PUT',
             body: JSON.stringify({ new_role: newRole }),
+        });
+    }
+
+    async updateUserStatus(userId, action) {
+        const params = new URLSearchParams({ action });
+        return this.request(`/admin/users/${userId}/status?${params}`, {
+            method: 'PUT',
+        });
+    }
+
+    async deleteUser(userId) {
+        return this.request(`/admin/users/${userId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getAdminLogs(limit = 100) {
+        return this.request(`/admin/logs?limit=${limit}`);
+    }
+
+    async getAllJobsAdmin() {
+        return this.request('/admin/jobs');
+    }
+
+    async deleteJobAdmin(jobId) {
+        return this.request(`/admin/jobs/${jobId}`, {
+            method: 'DELETE',
         });
     }
 }

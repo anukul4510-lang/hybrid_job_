@@ -39,6 +39,70 @@
             padding: 30px;
             border-radius: 12px;
         }
+        .highlight-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .highlight-btn:hover {
+            transform: scale(1.05);
+        }
+        .candidate-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .candidate-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        .match-score {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .match-high { background: #4caf50; color: white; }
+        .match-medium { background: #ff9800; color: white; }
+        .match-low { background: #f44336; color: white; }
+        .search-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            color: white;
+        }
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-shortlisted { background: #2196f3; color: white; }
+        .status-contacted { background: #9c27b0; color: white; }
+        .status-interviewing { background: #ff9800; color: white; }
+        .status-hired { background: #4caf50; color: white; }
+        .status-rejected { background: #f44336; color: white; }
     </style>
 </head>
 <body>
@@ -54,6 +118,9 @@
 
         <div class="dashboard-container">
             <div class="sidebar">
+                <button onclick="showCandidateSearch()" class="highlight-btn">🔍 Search Candidates</button>
+                <button onclick="showShortlist()" class="highlight-btn">⭐ Shortlisted Candidates</button>
+                <hr style="margin: 15px 0; border-color: rgba(255,255,255,0.3);">
                 <button onclick="showMyJobs()">My Job Postings</button>
                 <button onclick="showCreateJob()">Create New Job</button>
                 <button onclick="showApplications()">Applications</button>

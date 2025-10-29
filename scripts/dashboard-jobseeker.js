@@ -289,7 +289,7 @@ async function showSavedJobs() {
 }
 
 /**
- * Show skills management
+ * Show skills management with recommendations
  */
 async function showSkills() {
     const content = document.getElementById('content');
@@ -299,35 +299,139 @@ async function showSkills() {
     content.appendChild(loader);
     
     try {
-        const [allSkills, mySkills] = await Promise.all([
-            apiClient.getAllSkills(),
-            apiClient.getMySkills()
+        const [mySkills, recommendations] = await Promise.all([
+            apiClient.getMySkills(),
+            apiClient.getSkillRecommendations()
         ]);
         
         const mySkillsIds = new Set(mySkills.map(s => s.skill_id));
-        const availableSkills = allSkills.filter(s => !mySkillsIds.has(s.id));
+        const suggestedSkills = recommendations.filter(s => !mySkillsIds.has(s.id));
         
         content.innerHTML = `
             <h2>My Skills</h2>
-            <div>
+            
+            <!-- Current Skills -->
+            <div style="margin-bottom: 30px;">
                 <h3>Current Skills:</h3>
                 ${mySkills.length > 0 ? mySkills.map(skill => `
-                    <div class="job-card">
-                        <span>${skill.skill_name} - ${skill.proficiency_level}</span>
+                    <div class="job-card" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><strong>${skill.skill_name}</strong> - ${skill.proficiency_level}</span>
                         <button class="btn btn-danger" onclick="removeSkill(${skill.skill_id})">Remove</button>
                     </div>
-                `).join('') : '<p>No skills added yet.</p>'}
+                `).join('') : '<p>No skills added yet. Add skills to improve job matching!</p>'}
             </div>
-            <div style="margin-top: 20px;">
-                <h3>Add Skill:</h3>
-                <select id="skill-select">
-                    ${availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
-                </select>
-                <button class="btn btn-primary" onclick="addSkill()">Add Skill</button>
+            
+            <!-- Add New Skill -->
+            <div style="margin-bottom: 30px;">
+                <h3>Add New Skill:</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="skill-input" placeholder="Type skill name or search..." 
+                           style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px;">
+                    <button class="btn btn-primary" onclick="addCustomSkill()">Add</button>
+                    <button class="btn btn-secondary" onclick="searchSkills()">Search</button>
+                </div>
+                <div id="skill-recommendations"></div>
+            </div>
+            
+            <!-- Recommended Skills -->
+            <div>
+                <h3>Popular Skills:</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    ${suggestedSkills.slice(0, 15).map(skill => `
+                        <button class="btn btn-secondary" onclick="addSkillByName('${skill.name}')" 
+                                style="padding: 8px 16px;">
+                            ${skill.name} ${skill.user_count ? `(${skill.user_count} users)` : ''}
+                        </button>
+                    `).join('')}
+                </div>
             </div>
         `;
+        
+        // Add real-time search for skills
+        document.getElementById('skill-input').addEventListener('input', debounce(async (e) => {
+            const query = e.target.value;
+            if (query.length > 1) {
+                const results = await apiClient.getSkillRecommendations(query);
+                displaySkillRecommendations(results);
+            }
+        }, 300));
+        
     } catch (error) {
         content.innerHTML = '<div class="error-message">Failed to load skills: ' + error.message + '</div>';
+    }
+}
+
+/**
+ * Display skill recommendations
+ */
+function displaySkillRecommendations(skills) {
+    const container = document.getElementById('skill-recommendations');
+    if (!skills || skills.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="card" style="max-height: 200px; overflow-y: auto;">
+            ${skills.map(skill => `
+                <div style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;"
+                     onclick="addSkillByName('${skill.name}')">
+                    ${skill.name}
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+/**
+ * Search skills
+ */
+async function searchSkills() {
+    const query = document.getElementById('skill-input').value;
+    if (query.length < 2) {
+        showError('Please enter at least 2 characters', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        const results = await apiClient.getSkillRecommendations(query);
+        displaySkillRecommendations(results);
+    } catch (error) {
+        showError('Failed to search skills: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Add custom skill by typing
+ */
+async function addCustomSkill() {
+    const skillName = document.getElementById('skill-input').value.trim();
+    if (!skillName) {
+        showError('Please enter a skill name', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        await apiClient.createSkill(skillName);
+        showSuccess('Skill added successfully!', document.getElementById('content'));
+        document.getElementById('skill-input').value = '';
+        document.getElementById('skill-recommendations').innerHTML = '';
+        showSkills(); // Reload
+    } catch (error) {
+        showError('Failed to add skill: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Add skill by name (from recommendations)
+ */
+async function addSkillByName(skillName) {
+    try {
+        await apiClient.createSkill(skillName);
+        showSuccess(`${skillName} added!`, document.getElementById('content'));
+        showSkills(); // Reload
+    } catch (error) {
+        showError('Failed to add skill: ' + error.message, document.getElementById('content'));
     }
 }
 
@@ -395,6 +499,326 @@ async function showRecommendations() {
     }
 }
 
+/**
+ * Show resumes section
+ */
+async function showResumes() {
+    const content = document.getElementById('content');
+    content.innerHTML = '<h2>📄 My Resumes</h2>';
+    
+    const loader = createLoader();
+    content.appendChild(loader);
+    
+    try {
+        const resumes = await apiClient.getResumes();
+        
+        content.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h2>📄 My Resumes</h2>
+                <button class="btn btn-primary" onclick="showCreateResumeForm()">
+                    ➕ Create New Resume
+                </button>
+            </div>
+            
+            ${resumes.length > 0 ? `
+                <div style="margin-bottom: 30px;">
+                    <h3>Your Resumes:</h3>
+                    ${resumes.map(resume => `
+                        <div class="job-card" style="position: relative;">
+                            ${resume.is_primary ? '<span class="status-badge match-high" style="position: absolute; top: 15px; right: 15px;">Primary Resume</span>' : ''}
+                            
+                            <h3 style="margin-bottom: 15px;">${resume.title}</h3>
+                            
+                            ${resume.file_url ? `
+                                <p style="margin: 10px 0;">
+                                    <strong>📎 File:</strong> 
+                                    <a href="${resume.file_url}" target="_blank" style="color: #667eea;">View Resume</a>
+                                </p>
+                            ` : ''}
+                            
+                            ${resume.content ? `
+                                <div style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                                    <strong>Content Preview:</strong>
+                                    <p style="white-space: pre-wrap; margin-top: 10px;">${resume.content.substring(0, 300)}${resume.content.length > 300 ? '...' : ''}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <p style="color: #666; font-size: 0.9rem; margin: 10px 0;">
+                                Created: ${formatDate(resume.created_at)}
+                                ${resume.updated_at !== resume.created_at ? ` • Updated: ${formatDate(resume.updated_at)}` : ''}
+                            </p>
+                            
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                                ${!resume.is_primary ? `
+                                    <button class="btn btn-success" onclick="setPrimaryResume(${resume.id})">
+                                        ⭐ Set as Primary
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-secondary" onclick="editResume(${resume.id})">
+                                    ✏️ Edit
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteResume(${resume.id})">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div class="card" style="text-align: center; padding: 40px; background: #f0f4ff;">
+                    <h3>No Resumes Yet</h3>
+                    <p style="margin: 20px 0;">Create your first resume to get started with job applications!</p>
+                    <button class="btn btn-primary" onclick="showCreateResumeForm()">
+                        Create Your First Resume
+                    </button>
+                </div>
+            `}
+            
+            <div class="card" style="margin-top: 30px; background: #fff8e1;">
+                <h3>💡 Resume Tips</h3>
+                <ul style="line-height: 1.8; color: #666;">
+                    <li><strong>Primary Resume:</strong> Your primary resume is automatically attached to job applications</li>
+                    <li><strong>Multiple Resumes:</strong> Create different resumes for different types of jobs</li>
+                    <li><strong>Keep Updated:</strong> Regularly update your resume with new skills and experiences</li>
+                    <li><strong>File Upload:</strong> You can upload existing resumes (PDF, DOCX) or create new ones</li>
+                </ul>
+            </div>
+        `;
+        
+    } catch (error) {
+        content.innerHTML = '<div class="error-message">Failed to load resumes: ' + error.message + '</div>';
+    }
+}
+
+/**
+ * Show create resume form
+ */
+function showCreateResumeForm() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <h2>Create New Resume</h2>
+        <button class="btn btn-secondary" onclick="showResumes()" style="margin-bottom: 20px;">
+            ← Back to Resumes
+        </button>
+        
+        <div class="profile-form">
+            <div class="form-group full-width">
+                <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
+                <input type="text" id="resume-title" placeholder="e.g., Software Engineer Resume, Marketing Resume" required>
+                <small style="color: #666;">Give your resume a descriptive title</small>
+            </div>
+            
+            <div class="form-group full-width">
+                <label><strong>Option 1: Upload Existing Resume</strong></label>
+                <input type="url" id="resume-file-url" placeholder="Enter resume URL (e.g., Google Drive link, Dropbox link)">
+                <small style="color: #666;">Paste a link to your resume file (PDF, DOCX)</small>
+            </div>
+            
+            <div style="text-align: center; grid-column: 1 / -1; margin: 20px 0;">
+                <strong>- OR -</strong>
+            </div>
+            
+            <div class="form-group full-width">
+                <label><strong>Option 2: Create Resume Content</strong></label>
+                <textarea id="resume-content" rows="15" placeholder="Paste or type your resume content here...
+
+Example:
+JOHN DOE
+Email: john@example.com | Phone: (555) 123-4567
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 5+ years...
+
+SKILLS
+- Python, JavaScript, React
+- AWS, Docker, Kubernetes
+..."></textarea>
+                <small style="color: #666;">Type or paste your resume text content</small>
+            </div>
+            
+            <div class="form-group full-width">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="set-primary" style="width: auto;">
+                    <span>Set as primary resume (used for job applications)</span>
+                </label>
+            </div>
+            
+            <div class="form-group full-width">
+                <button class="btn btn-primary" onclick="createResume()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                    ✅ Create Resume
+                </button>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 30px; background: #e3f2fd;">
+            <h3>📝 Resume Creation Tips</h3>
+            <ul style="line-height: 1.8; color: #666;">
+                <li><strong>Upload URL:</strong> Use Google Drive, Dropbox, or any cloud storage. Make sure the link is publicly accessible.</li>
+                <li><strong>Text Content:</strong> Include your contact info, summary, experience, education, and skills.</li>
+                <li><strong>Multiple Formats:</strong> You can create both - one with a file link and one with text content.</li>
+                <li><strong>Update Later:</strong> You can always come back and edit your resume.</li>
+            </ul>
+        </div>
+    `;
+}
+
+/**
+ * Create new resume
+ */
+async function createResume() {
+    const title = document.getElementById('resume-title').value.trim();
+    const fileUrl = document.getElementById('resume-file-url').value.trim();
+    const content = document.getElementById('resume-content').value.trim();
+    const setPrimary = document.getElementById('set-primary').checked;
+    
+    // Validation
+    if (!title) {
+        showError('Please enter a resume title', document.getElementById('content'));
+        return;
+    }
+    
+    if (!fileUrl && !content) {
+        showError('Please either provide a file URL or enter resume content', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        const resume = await apiClient.createResume(title, content || null, fileUrl || null);
+        
+        // Set as primary if checkbox is checked
+        if (setPrimary && resume.id) {
+            await apiClient.setPrimaryResume(resume.id);
+        }
+        
+        showSuccess('Resume created successfully!', document.getElementById('content'));
+        
+        // Wait a moment then redirect to resumes list
+        setTimeout(() => {
+            showResumes();
+        }, 1500);
+        
+    } catch (error) {
+        showError('Failed to create resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Edit resume
+ */
+async function editResume(resumeId) {
+    const content = document.getElementById('content');
+    
+    try {
+        // Get all resumes and find the one to edit
+        const resumes = await apiClient.getResumes();
+        const resume = resumes.find(r => r.id === resumeId);
+        
+        if (!resume) {
+            showError('Resume not found', content);
+            return;
+        }
+        
+        content.innerHTML = `
+            <h2>Edit Resume</h2>
+            <button class="btn btn-secondary" onclick="showResumes()" style="margin-bottom: 20px;">
+                ← Back to Resumes
+            </button>
+            
+            <div class="profile-form">
+                <div class="form-group full-width">
+                    <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
+                    <input type="text" id="resume-title" value="${resume.title}" required>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Resume File URL:</strong></label>
+                    <input type="url" id="resume-file-url" value="${resume.file_url || ''}" placeholder="Enter resume URL">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Resume Content:</strong></label>
+                    <textarea id="resume-content" rows="15">${resume.content || ''}</textarea>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-primary" onclick="updateResume(${resumeId})" style="width: 100%; padding: 15px;">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        showError('Failed to load resume: ' + error.message, content);
+    }
+}
+
+/**
+ * Update resume
+ */
+async function updateResume(resumeId) {
+    const title = document.getElementById('resume-title').value.trim();
+    const fileUrl = document.getElementById('resume-file-url').value.trim();
+    const content = document.getElementById('resume-content').value.trim();
+    
+    if (!title) {
+        showError('Please enter a resume title', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        await apiClient.updateResume(resumeId, title, content || null, fileUrl || null);
+        showSuccess('Resume updated successfully!', document.getElementById('content'));
+        
+        setTimeout(() => {
+            showResumes();
+        }, 1500);
+        
+    } catch (error) {
+        showError('Failed to update resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Set primary resume
+ */
+async function setPrimaryResume(resumeId) {
+    try {
+        await apiClient.setPrimaryResume(resumeId);
+        showSuccess('Primary resume updated!', document.getElementById('content'));
+        
+        // Reload resumes to show updated primary status
+        setTimeout(() => {
+            showResumes();
+        }, 1000);
+        
+    } catch (error) {
+        showError('Failed to set primary resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Delete resume
+ */
+async function deleteResume(resumeId) {
+    if (!confirm('Are you sure you want to delete this resume? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await apiClient.deleteResume(resumeId);
+        showSuccess('Resume deleted successfully!', document.getElementById('content'));
+        
+        // Reload resumes
+        setTimeout(() => {
+            showResumes();
+        }, 1000);
+        
+    } catch (error) {
+        showError('Failed to delete resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
 // Make functions globally available
 window.showProfile = showProfile;
 window.showBrowseJobs = showBrowseJobs;
@@ -409,4 +833,14 @@ window.applyToJob = applyToJob;
 window.saveJob = saveJob;
 window.addSkill = addSkill;
 window.removeSkill = removeSkill;
+window.addCustomSkill = addCustomSkill;
+window.addSkillByName = addSkillByName;
+window.searchSkills = searchSkills;
+window.showResumes = showResumes;
+window.showCreateResumeForm = showCreateResumeForm;
+window.createResume = createResume;
+window.editResume = editResume;
+window.updateResume = updateResume;
+window.setPrimaryResume = setPrimaryResume;
+window.deleteResume = deleteResume;
 

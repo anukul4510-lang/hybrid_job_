@@ -1,11 +1,408 @@
 /**
  * Recruiter Dashboard Module
- * Handles recruiter-specific functionality
+ * Handles recruiter-specific functionality including AI-powered candidate search
  */
 
 import { apiClient } from './api-client.js';
 
 let myJobs = [];
+let searchResults = [];
+
+/**
+ * Show AI-powered candidate search (TOP FEATURE)
+ */
+async function showCandidateSearch() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="search-container">
+            <h2 style="margin-bottom: 20px; color: white;">🔍 AI-Powered Candidate Search</h2>
+            <p style="margin-bottom: 20px; opacity: 0.9;">
+                Use natural language to find perfect candidates. Try: "Senior Python developer with 5+ years in San Francisco"
+            </p>
+            
+            <input type="text" id="candidate-search-input" class="search-input" 
+                   placeholder="Describe your ideal candidate...">
+            
+            <div class="filter-group">
+                <input type="text" id="location-filter" placeholder="Location (optional)" 
+                       style="padding: 12px; border: none; border-radius: 8px;">
+                <input type="number" id="experience-filter" placeholder="Min years experience" 
+                       style="padding: 12px; border: none; border-radius: 8px;">
+                <select id="job-filter" style="padding: 12px; border: none; border-radius: 8px;">
+                    <option value="">For specific job (optional)</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" onclick="searchCandidates()" 
+                    style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                Search Candidates
+            </button>
+        </div>
+        
+        <div id="search-results"></div>
+    `;
+    
+    // Load jobs for filter
+    try {
+        myJobs = await apiClient.getMyJobs();
+        const jobFilter = document.getElementById('job-filter');
+        myJobs.forEach(job => {
+            const option = document.createElement('option');
+            option.value = job.id;
+            option.textContent = job.title;
+            jobFilter.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Failed to load jobs:', error);
+    }
+    
+    // Enter key to search
+    document.getElementById('candidate-search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchCandidates();
+        }
+    });
+}
+
+/**
+ * Search candidates with AI
+ */
+async function searchCandidates() {
+    const query = document.getElementById('candidate-search-input').value;
+    const location = document.getElementById('location-filter').value;
+    const experience = document.getElementById('experience-filter').value;
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (!query.trim()) {
+        showError('Please enter a search query', document.getElementById('content'));
+        return;
+    }
+    
+    resultsDiv.innerHTML = createLoader().outerHTML;
+    
+    try {
+        const results = await apiClient.searchCandidates(
+            query, 
+            location || null, 
+            experience || null, 
+            50
+        );
+        
+        searchResults = results.results || [];
+        
+        if (searchResults.length === 0) {
+            resultsDiv.innerHTML = `
+                <div class="card" style="text-align: center; padding: 40px;">
+                    <h3>No candidates found</h3>
+                    <p>Try adjusting your search criteria</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Display AI-parsed filters
+        const filtersHtml = results.filters_applied ? `
+            <div class="card" style="margin-bottom: 20px; background: #f0f4ff;">
+                <h4>🤖 AI understood your query as:</h4>
+                <p><strong>Skills:</strong> ${results.filters_applied.skills?.join(', ') || 'Any'}</p>
+                <p><strong>Location:</strong> ${results.filters_applied.location || 'Any'}</p>
+                <p><strong>Experience:</strong> ${results.filters_applied.min_experience ? results.filters_applied.min_experience + '+ years' : 'Any'}</p>
+            </div>
+        ` : '';
+        
+        resultsDiv.innerHTML = `
+            ${filtersHtml}
+            <h3>Found ${searchResults.length} Candidates</h3>
+            <p style="color: #666; margin-bottom: 20px;">Sorted by match relevance</p>
+            ${searchResults.map(candidate => renderCandidateCard(candidate)).join('')}
+        `;
+        
+    } catch (error) {
+        resultsDiv.innerHTML = `<div class="error-message">Search failed: ${error.message}</div>`;
+    }
+}
+
+/**
+ * Render candidate card with match score
+ */
+function renderCandidateCard(candidate) {
+    const matchScore = candidate.match_score || 0;
+    const matchClass = matchScore >= 75 ? 'match-high' : matchScore >= 50 ? 'match-medium' : 'match-low';
+    const skills = candidate.skills ? candidate.skills.split(',').slice(0, 5).join(', ') : 'No skills listed';
+    
+    return `
+        <div class="candidate-card">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 10px 0; color: #667eea;">
+                        ${candidate.first_name || ''} ${candidate.last_name || 'Candidate'}
+                    </h3>
+                    <p style="margin: 5px 0; color: #666;">
+                        📍 ${candidate.location || 'Location not specified'} | 
+                        💼 ${candidate.years_experience || 0} years experience
+                    </p>
+                    <p style="margin: 5px 0; color: #666;">
+                        📧 ${candidate.email || candidate.candidate_email}
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <div class="match-score ${matchClass}">
+                        ${Math.round(matchScore)}% Match
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <p><strong>Skills:</strong> ${skills}</p>
+                ${candidate.bio ? `<p style="color: #555;">${candidate.bio.substring(0, 150)}${candidate.bio.length > 150 ? '...' : ''}</p>` : ''}
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="viewCandidateProfile(${candidate.id})">
+                    View Full Profile
+                </button>
+                <button class="btn btn-success" onclick="shortlistCandidate(${candidate.id}, ${matchScore})">
+                    ⭐ Shortlist
+                </button>
+                ${candidate.resume_url ? `
+                    <a href="${candidate.resume_url}" target="_blank" class="btn btn-secondary">
+                        📄 View Resume
+                    </a>
+                ` : ''}
+                ${candidate.linkedin_url ? `
+                    <a href="${candidate.linkedin_url}" target="_blank" class="btn btn-secondary">
+                        🔗 LinkedIn
+                    </a>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * View full candidate profile
+ */
+async function viewCandidateProfile(candidateId) {
+    const content = document.getElementById('content');
+    content.innerHTML = createLoader().outerHTML;
+    
+    try {
+        const profile = await apiClient.getCandidateProfile(candidateId);
+        
+        content.innerHTML = `
+            <button class="btn btn-secondary" onclick="showCandidateSearch()">← Back to Search</button>
+            
+            <div class="card" style="margin-top: 20px;">
+                <h2>${profile.first_name} ${profile.last_name}</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                    <div><strong>Email:</strong> ${profile.email}</div>
+                    <div><strong>Phone:</strong> ${profile.phone || 'Not provided'}</div>
+                    <div><strong>Location:</strong> ${profile.location || 'Not specified'}</div>
+                    <div><strong>Experience:</strong> ${profile.years_experience || 0} years</div>
+                </div>
+                
+                ${profile.bio ? `<div style="margin: 20px 0;"><strong>Bio:</strong><p>${profile.bio}</p></div>` : ''}
+                
+                <div style="margin: 20px 0;">
+                    <strong>Skills:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                        ${profile.skills?.map(skill => `
+                            <span class="status-badge status-shortlisted">
+                                ${skill.name} (${skill.proficiency_level})
+                            </span>
+                        `).join('') || '<p>No skills listed</p>'}
+                    </div>
+                </div>
+                
+                ${profile.resumes?.length > 0 ? `
+                    <div style="margin: 20px 0;">
+                        <strong>Resumes:</strong>
+                        ${profile.resumes.map(resume => `
+                            <div class="job-card">
+                                <strong>${resume.title}</strong>
+                                ${resume.is_primary ? '<span class="status-badge match-high">Primary</span>' : ''}
+                                ${resume.file_url ? `<a href="${resume.file_url}" target="_blank" class="btn btn-secondary">View</a>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="shortlistCandidate(${candidateId}, 0)">
+                        ⭐ Add to Shortlist
+                    </button>
+                    ${profile.linkedin_url ? `
+                        <a href="${profile.linkedin_url}" target="_blank" class="btn btn-secondary">LinkedIn Profile</a>
+                    ` : ''}
+                    ${profile.portfolio_url ? `
+                        <a href="${profile.portfolio_url}" target="_blank" class="btn btn-secondary">Portfolio</a>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        content.innerHTML = `<div class="error-message">Failed to load profile: ${error.message}</div>`;
+    }
+}
+
+/**
+ * Shortlist a candidate
+ */
+async function shortlistCandidate(candidateId, matchScore) {
+    const jobId = document.getElementById('job-filter')?.value || null;
+    
+    try {
+        await apiClient.addToShortlist(candidateId, jobId, matchScore, null);
+        showSuccess('Candidate added to shortlist!', document.getElementById('content'));
+    } catch (error) {
+        showError('Failed to shortlist: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Show shortlisted candidates
+ */
+async function showShortlist() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="dashboard-header">
+            <h2>⭐ Shortlisted Candidates</h2>
+            <div style="display: flex; gap: 10px;">
+                <select id="status-filter" style="padding: 10px; border-radius: 8px;">
+                    <option value="">All Statuses</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="hired">Hired</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <button class="btn btn-primary" onclick="filterShortlist()">Filter</button>
+            </div>
+        </div>
+        <div id="shortlist-results"></div>
+    `;
+    
+    loadShortlist();
+}
+
+/**
+ * Load shortlist
+ */
+async function loadShortlist(status = null) {
+    const resultsDiv = document.getElementById('shortlist-results');
+    resultsDiv.innerHTML = createLoader().outerHTML;
+    
+    try {
+        const shortlist = await apiClient.getShortlist(status);
+        
+        if (shortlist.length === 0) {
+            resultsDiv.innerHTML = `
+                <div class="card" style="text-align: center; padding: 40px;">
+                    <h3>No shortlisted candidates yet</h3>
+                    <p>Use the candidate search to find and shortlist candidates</p>
+                    <button class="btn btn-primary" onclick="showCandidateSearch()">Search Candidates</button>
+                </div>
+            `;
+            return;
+        }
+        
+        resultsDiv.innerHTML = `
+            <p style="margin-bottom: 20px; color: #666;">${shortlist.length} candidates shortlisted</p>
+            ${shortlist.map(candidate => renderShortlistCard(candidate)).join('')}
+        `;
+    } catch (error) {
+        resultsDiv.innerHTML = `<div class="error-message">Failed to load shortlist: ${error.message}</div>`;
+    }
+}
+
+/**
+ * Filter shortlist
+ */
+function filterShortlist() {
+    const status = document.getElementById('status-filter').value;
+    loadShortlist(status || null);
+}
+
+/**
+ * Render shortlist card
+ */
+function renderShortlistCard(candidate) {
+    const matchScore = candidate.match_score || 0;
+    const matchClass = matchScore >= 75 ? 'match-high' : matchScore >= 50 ? 'match-medium' : 'match-low';
+    
+    return `
+        <div class="candidate-card">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 10px 0; color: #667eea;">
+                        ${candidate.first_name || ''} ${candidate.last_name || 'Candidate'}
+                    </h3>
+                    <span class="status-badge status-${candidate.status}">${candidate.status}</span>
+                    ${candidate.job_title ? `<span class="status-badge" style="background: #607d8b; color: white;">For: ${candidate.job_title}</span>` : ''}
+                </div>
+                ${matchScore > 0 ? `<div class="match-score ${matchClass}">${Math.round(matchScore)}% Match</div>` : ''}
+            </div>
+            
+            <p style="margin: 5px 0; color: #666;">
+                📍 ${candidate.location || 'N/A'} | 
+                💼 ${candidate.years_experience || 0} years | 
+                📧 ${candidate.candidate_email}
+            </p>
+            
+            ${candidate.skills ? `<p><strong>Skills:</strong> ${candidate.skills.split(',').slice(0, 5).join(', ')}</p>` : ''}
+            ${candidate.notes ? `<p style="font-style: italic; color: #666;">Notes: ${candidate.notes}</p>` : ''}
+            <p style="font-size: 0.9rem; color: #999;">Shortlisted: ${formatDate(candidate.shortlisted_date)}</p>
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="viewCandidateProfile(${candidate.candidate_id})">
+                    View Profile
+                </button>
+                <select id="status-${candidate.id}" onchange="updateShortlistStatus(${candidate.id}, this.value)" 
+                        style="padding: 8px; border-radius: 8px;">
+                    <option value="">Update Status...</option>
+                    <option value="contacted">Mark as Contacted</option>
+                    <option value="interviewing">Mark as Interviewing</option>
+                    <option value="hired">Mark as Hired</option>
+                    <option value="rejected">Mark as Rejected</option>
+                </select>
+                ${candidate.phone ? `<a href="tel:${candidate.phone}" class="btn btn-secondary">📞 Call</a>` : ''}
+                ${candidate.candidate_email ? `<a href="mailto:${candidate.candidate_email}" class="btn btn-secondary">✉️ Email</a>` : ''}
+                <button class="btn btn-danger" onclick="removeFromShortlist(${candidate.id})">Remove</button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Update shortlist status
+ */
+async function updateShortlistStatus(shortlistId, status) {
+    if (!status) return;
+    
+    try {
+        await apiClient.updateShortlistStatus(shortlistId, status);
+        showSuccess('Status updated!', document.getElementById('content'));
+        loadShortlist();
+    } catch (error) {
+        showError('Failed to update status: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Remove from shortlist
+ */
+async function removeFromShortlist(shortlistId) {
+    if (!confirm('Remove this candidate from shortlist?')) return;
+    
+    try {
+        await apiClient.removeFromShortlist(shortlistId);
+        showSuccess('Candidate removed from shortlist', document.getElementById('content'));
+        loadShortlist();
+    } catch (error) {
+        showError('Failed to remove: ' + error.message, document.getElementById('content'));
+    }
+}
 
 /**
  * Show my job postings
@@ -37,9 +434,9 @@ async function showMyJobs() {
                 <p>Status: <strong>${job.status}</strong></p>
                 <p>Posted: ${formatDate(job.posted_date)}</p>
                 <div class="actions">
-                    <button class="btn btn-primary" data-job-id="${job.id}" onclick="viewApplications(this.dataset.jobId)">View Applications</button>
-                    <button class="btn btn-secondary" data-job-id="${job.id}" onclick="editJob(this.dataset.jobId)">Edit</button>
-                    <button class="btn btn-danger" data-job-id="${job.id}" onclick="deleteJob(this.dataset.jobId)">Delete</button>
+                    <button class="btn btn-primary" onclick="viewApplications(${job.id})">View Applications</button>
+                    <button class="btn btn-secondary" onclick="editJob(${job.id})">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteJob(${job.id})">Delete</button>
                 </div>
             </div>
         `).join('');
@@ -178,7 +575,6 @@ async function updateAppStatus(applicationId, status) {
  * Edit job
  */
 function editJob(jobId) {
-    // Similar to create job, but with pre-filled values
     showCreateJob();
     alert('Edit functionality coming soon. Please create a new job posting.');
 }
@@ -245,6 +641,14 @@ async function showApplications() {
 }
 
 // Make functions globally available
+window.showCandidateSearch = showCandidateSearch;
+window.searchCandidates = searchCandidates;
+window.viewCandidateProfile = viewCandidateProfile;
+window.shortlistCandidate = shortlistCandidate;
+window.showShortlist = showShortlist;
+window.filterShortlist = filterShortlist;
+window.updateShortlistStatus = updateShortlistStatus;
+window.removeFromShortlist = removeFromShortlist;
 window.showMyJobs = showMyJobs;
 window.showCreateJob = showCreateJob;
 window.viewApplications = viewApplications;
@@ -254,3 +658,9 @@ window.deleteJob = deleteJob;
 window.showApplications = showApplications;
 window.createJob = createJob;
 
+// Load candidate search by default
+window.addEventListener('DOMContentLoaded', () => {
+    if (getCurrentUserRole() === 'recruiter') {
+        showCandidateSearch();
+    }
+});

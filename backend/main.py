@@ -49,6 +49,10 @@ async def startup_event():
     """Initialize database connections on startup."""
     await init_mysql_db()
     init_chroma_db()
+    
+    # Create default admin account
+    from backend.services.admin_service import create_default_admin
+    create_default_admin()
 
 
 @app.get("/")

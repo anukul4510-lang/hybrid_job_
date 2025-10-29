@@ -86,6 +86,10 @@ async def create_tables():
             location VARCHAR(255),
             bio TEXT,
             profile_picture VARCHAR(500),
+            resume_url VARCHAR(500),
+            linkedin_url VARCHAR(500),
+            portfolio_url VARCHAR(500),
+            years_experience INT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -187,6 +191,64 @@ async def create_tables():
             is_read BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Resumes table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS resumes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            title VARCHAR(255),
+            content TEXT,
+            file_url VARCHAR(500),
+            is_primary BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+    
+    # System settings table for admin
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS system_settings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            setting_key VARCHAR(100) UNIQUE NOT NULL,
+            setting_value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Admin activity log
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            admin_id INT NOT NULL,
+            action VARCHAR(255) NOT NULL,
+            target_type VARCHAR(50),
+            target_id INT,
+            details TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Shortlisted candidates table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS shortlisted_candidates (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            recruiter_id INT NOT NULL,
+            candidate_id INT NOT NULL,
+            job_id INT,
+            match_score DECIMAL(5, 2),
+            notes TEXT,
+            status ENUM('shortlisted', 'contacted', 'interviewing', 'rejected', 'hired') DEFAULT 'shortlisted',
+            shortlisted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (recruiter_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (candidate_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (job_id) REFERENCES job_postings(id) ON DELETE SET NULL,
+            UNIQUE KEY unique_shortlist (recruiter_id, candidate_id)
         )
     """)
     

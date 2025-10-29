@@ -5,12 +5,30 @@ A full-stack job application platform with AI-powered hybrid search combining tr
 ## Features
 
 ### Core Functionality
-- **User Management**: Registration, authentication with JWT, role-based access (Job Seeker, Recruiter, Admin)
-- **Profile Management**: User profiles with skills, location, and bio
-- **Job Postings**: Create, edit, delete, and manage job postings
-- **Applications**: Apply to jobs, track application status, manage candidates
+- **User Management**: Registration with profile details, JWT authentication, role-based access (Job Seeker, Recruiter, Admin)
+- **Enhanced Registration**: Captures first name, last name, phone, and location during signup
+- **Profile Management**: Comprehensive user profiles with skills, location, bio, resume, links
+- **Job Postings**: Create, edit, delete, and manage job postings with AI indexing
+- **Applications**: Apply to jobs, track status, filter by status/company, manage candidates
 - **Hybrid Search**: Combines SQL filtering with AI-powered semantic search
 - **AI Recommendations**: Personalized job recommendations based on user skills
+
+### New Features (Upgraded)
+- **Dynamic Skills Management**: Type any skill, get AI-powered recommendations, create custom skills
+- **Resume Builder**: Create, edit, manage multiple resumes, set primary resume
+- **🔥 AI-Powered Candidate Search**: Natural language queries with match scoring for recruiters
+- **⭐ Shortlist Management**: Track candidates through hiring pipeline with status updates
+- **Application Filtering**: Search applications by status and company
+- **Comprehensive Admin Panel**: User management, job oversight, statistics, activity logs
+- **Default Admin Account**: Auto-created on server startup (admin@gmail.com)
+
+### 🌟 Premium Recruiter Features
+- **Natural Language Search**: "Senior Python developer with 5+ years in San Francisco"
+- **Match Scoring**: AI calculates 0-100% relevancy score for each candidate
+- **One-Click Shortlist**: Save candidates with automatic match score tracking
+- **Hiring Pipeline**: Track status (Shortlisted → Contacted → Interviewing → Hired)
+- **Direct Contact**: Call/email candidates from shortlist
+- **Job Linking**: Associate candidates with specific job postings
 
 ### Technical Highlights
 - **Backend**: FastAPI with async endpoints, Python 3.13
@@ -146,25 +164,40 @@ The frontend will be available at `http://localhost:5500`
    - Go to the home page
    - Click "Register"
    - Choose your role (Job Seeker or Recruiter)
-   - Enter your email and password
+   - Enter your email, password, and optional details (name, phone, location)
+   - Profile auto-created with your registration info
 
 2. **Job Seekers**
-   - Complete your profile with skills and location
-   - Browse jobs using search or AI recommendations
-   - Apply to jobs that match your skills
+   - Complete your profile with additional details
+   - **Add skills by typing** - get AI recommendations as you type
+   - Create and manage multiple resumes
+   - Browse jobs using natural language search
+   - Apply to jobs with auto-attached resume
+   - Filter applications by status or company
    - Save jobs for later
    - Track your application status
 
 3. **Recruiters**
+   - **🔍 AI-Powered Candidate Search** - Top dashboard feature
+     - Natural language: "Senior Python developer with 5+ years in San Francisco"
+     - AI-parsed filters with vector + SQL hybrid search
+     - Match scores (0-100%) for each candidate
+   - **⭐ Shortlist Management** - Track hiring pipeline
+     - One-click shortlist with automatic score saving
+     - Status tracking: Shortlisted → Contacted → Interviewing → Hired
+     - Direct contact via call/email buttons
+     - Add private notes per candidate
    - Create job postings with requirements
+   - View detailed candidate profiles with resumes and skills
    - Review applications from candidates
-   - Shortlist or reject applications
    - Manage your job postings
 
-4. **Admins**
-   - View system statistics
-   - Manage user roles
-   - Monitor job postings and applications
+4. **Admins** (Login: admin@gmail.com / 12345678)
+   - View comprehensive system statistics
+   - Manage user roles and account status
+   - Monitor and delete job postings
+   - View activity audit logs
+   - Disable problematic accounts
 
 ### API Endpoints
 
@@ -226,7 +259,13 @@ When a user searches "remote Python developer jobs in San Francisco":
 ### Running in Development Mode
 ```bash
 # Backend with auto-reload
+python run.py
+
+# Or directly:
 uvicorn backend.main:app --reload
+
+# Seed initial skills (optional, run once)
+python seed_skills.py
 
 # Frontend (VS Code Live Server recommended)
 ```
@@ -289,6 +328,25 @@ python test_backend.py
 - Get API key from https://makersuite.google.com/app/apikey
 - Add to `.env`: `GEMINI_API_KEY=your-key`
 - System falls back to SQL-only search if API fails
+
+## Documentation
+
+### Setup & General
+- **README.md** - Main documentation (this file)
+- **SETUP.md** - Detailed setup instructions
+- **QUICK_START.md** - Step-by-step setup and common error fixes
+- **TROUBLESHOOTING.md** - Comprehensive troubleshooting guide
+- **ERROR_EXPLANATION.md** - Understanding CORS and 500 errors
+- **ARCHITECTURE.md** - System architecture overview
+- **PROJECT_SUMMARY.md** - Project overview
+
+### Feature Guides
+- **UPGRADE_FEATURES.md** - Complete upgrade features documentation
+- **UPGRADE_COMPLETE.md** - Implementation summary
+- **QUICK_REFERENCE.md** - Quick reference for all features
+- **RECRUITER_SEARCH_SHORTLIST.md** - AI candidate search & shortlist technical guide
+- **RECRUITER_QUICK_START.md** - Recruiter feature quick start (5 min read)
+- **FINAL_IMPLEMENTATION_SUMMARY.md** - Complete system summary
 
 ## License
 

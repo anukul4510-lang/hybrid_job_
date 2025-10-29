@@ -219,3 +219,79 @@ def remove_user_skill(user_id: int, skill_id: int):
         cursor.close()
         conn.close()
 
+
+def get_skill_recommendations(query: str = None, limit: int = 10) -> List[dict]:
+    """Get skill recommendations based on query or popular skills."""
+    conn = MySQLConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        if query:
+            # Search skills by name
+            cursor.execute(
+                """
+                SELECT s.*, COUNT(us.user_id) as user_count
+                FROM skills s
+                LEFT JOIN user_skills us ON s.id = us.skill_id
+                WHERE s.name LIKE %s
+                GROUP BY s.id
+                ORDER BY user_count DESC, s.name
+                LIMIT %s
+                """,
+                (f"%{query}%", limit)
+            )
+        else:
+            # Get most popular skills
+            cursor.execute(
+                """
+                SELECT s.*, COUNT(us.user_id) as user_count
+                FROM skills s
+                LEFT JOIN user_skills us ON s.id = us.skill_id
+                GROUP BY s.id
+                ORDER BY user_count DESC, s.name
+                LIMIT %s
+                """,
+                (limit,)
+            )
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def create_skill_if_not_exists(skill_name: str) -> dict:
+    """Create a skill if it doesn't exist, otherwise return existing."""
+    conn = MySQLConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if skill exists
+        cursor.execute(
+            "SELECT * FROM skills WHERE name = %s",
+            (skill_name,)
+        )
+        skill = cursor.fetchone()
+        
+        if skill:
+            return skill
+        
+        # Create new skill
+        cursor.execute(
+            "INSERT INTO skills (name) VALUES (%s)",
+            (skill_name,)
+        )
+        skill_id = cursor.lastrowid
+        conn.commit()
+        
+        cursor.execute(
+            "SELECT * FROM skills WHERE id = %s",
+            (skill_id,)
+        )
+        return cursor.fetchone()
+    except mysql.connector.Error as e:
+        conn.rollback()
+        raise ValueError(f"Database error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+

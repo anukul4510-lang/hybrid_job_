@@ -12,6 +12,10 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str = "jobseeker"
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
 
 
 class UserLogin(BaseModel):

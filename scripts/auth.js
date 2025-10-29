@@ -85,9 +85,16 @@ if (registerForm) {
         const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
         const role = document.getElementById('register-role').value;
+        const first_name = document.getElementById('register-first-name')?.value;
+        const last_name = document.getElementById('register-last-name')?.value;
+        const phone = document.getElementById('register-phone')?.value;
+        const location = document.getElementById('register-location')?.value;
 
         try {
-            await apiClient.register({ email, password, role });
+            await apiClient.register({ 
+                email, password, role,
+                first_name, last_name, phone, location
+            });
             alert('Registration successful! Please login.');
             showLogin();
         } catch (error) {

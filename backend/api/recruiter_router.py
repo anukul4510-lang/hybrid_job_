@@ -4,6 +4,7 @@ Handles job posting management and application review.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
 from backend.models.job_models import (
     JobPostingCreate, JobPostingUpdate
 )
@@ -12,6 +13,10 @@ from backend.services.job_service import (
     delete_job_posting, get_all_job_postings
 )
 from backend.services.search_service import index_job_posting
+from backend.services.recruiter_service import (
+    advanced_user_search, shortlist_candidate, get_shortlisted_candidates,
+    update_shortlist_status, remove_from_shortlist
+)
 from backend.utils.dependencies import get_current_recruiter, TokenData
 
 router = APIRouter()
@@ -105,7 +110,7 @@ async def get_job_applications(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
         SELECT a.*, u.email, up.first_name, up.last_name
@@ -134,7 +139,7 @@ async def update_application_status(
     from datetime import datetime
     
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Get application to verify ownership
@@ -161,4 +166,141 @@ async def update_application_status(
     finally:
         cursor.close()
         conn.close()
+
+
+@router.get("/users/search")
+async def search_candidates(
+    query: str,
+    location: str = None,
+    min_experience: int = None,
+    limit: int = 20,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Advanced user search with natural language query parsing."""
+    try:
+        filters = {}
+        if location:
+            filters['location'] = location
+        if min_experience:
+            filters['min_experience'] = min_experience
+        
+        return advanced_user_search(query, filters, limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/users/{user_id}")
+async def get_candidate_profile(
+    user_id: int,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Get detailed profile of a candidate."""
+    from backend.database.mysql_connection import MySQLConnection
+    
+    conn = MySQLConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Get user profile
+        cursor.execute(
+            """
+            SELECT u.id, u.email, u.created_at,
+                   up.first_name, up.last_name, up.phone, up.location,
+                   up.bio, up.years_experience, up.resume_url,
+                   up.linkedin_url, up.portfolio_url
+            FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id
+            WHERE u.id = %s AND u.role = 'jobseeker'
+            """,
+            (user_id,)
+        )
+        profile = cursor.fetchone()
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        # Get skills
+        cursor.execute(
+            """
+            SELECT s.id, s.name, us.proficiency_level
+            FROM user_skills us
+            JOIN skills s ON us.skill_id = s.id
+            WHERE us.user_id = %s
+            """,
+            (user_id,)
+        )
+        profile['skills'] = cursor.fetchall()
+        
+        # Get resumes
+        cursor.execute(
+            "SELECT * FROM resumes WHERE user_id = %s ORDER BY is_primary DESC, created_at DESC",
+            (user_id,)
+        )
+        profile['resumes'] = cursor.fetchall()
+        
+        return profile
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Shortlist endpoints
+@router.post("/shortlist")
+async def add_to_shortlist(
+    candidate_id: int,
+    job_id: int = None,
+    match_score: float = None,
+    notes: str = None,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Add a candidate to shortlist."""
+    try:
+        return shortlist_candidate(
+            current_user.user_id, 
+            candidate_id, 
+            job_id, 
+            match_score, 
+            notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/shortlist")
+async def get_my_shortlist(
+    status: str = None,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Get all shortlisted candidates."""
+    try:
+        return get_shortlisted_candidates(current_user.user_id, status)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/shortlist/{shortlist_id}")
+async def update_shortlist(
+    shortlist_id: int,
+    status: str,
+    notes: str = None,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Update shortlist candidate status."""
+    try:
+        return update_shortlist_status(shortlist_id, current_user.user_id, status, notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/shortlist/{shortlist_id}")
+async def remove_shortlist(
+    shortlist_id: int,
+    current_user: TokenData = Depends(get_current_recruiter)
+):
+    """Remove a candidate from shortlist."""
+    try:
+        remove_from_shortlist(shortlist_id, current_user.user_id)
+        return {"message": "Candidate removed from shortlist"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 

@@ -99,6 +99,17 @@ def register_user(user_data: UserCreate) -> dict:
         )
         
         user_id = cursor.lastrowid
+        
+        # Create profile automatically with registration data
+        cursor.execute(
+            """
+            INSERT INTO user_profiles (user_id, first_name, last_name, phone, location)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (user_id, user_data.first_name, user_data.last_name, 
+             user_data.phone, user_data.location)
+        )
+        
         conn.commit()
         
         # Fetch the complete user record to get created_at

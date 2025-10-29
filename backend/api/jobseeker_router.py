@@ -12,7 +12,12 @@ from backend.models.user_models import (
 from backend.models.job_models import ApplicationCreate, SavedJobCreate
 from backend.services.user_service import (
     create_user_profile, get_user_profile, update_user_profile,
-    add_user_skill, get_user_skills, remove_user_skill, get_all_skills
+    add_user_skill, get_user_skills, remove_user_skill, get_all_skills,
+    get_skill_recommendations, create_skill_if_not_exists
+)
+from backend.services.resume_service import (
+    create_resume, get_user_resumes, get_resume, update_resume,
+    delete_resume, set_primary_resume
 )
 from backend.services.job_service import (
     get_all_job_postings, create_application, get_user_applications,
@@ -147,4 +152,139 @@ async def delete_skill(
         return {"message": "Skill removed successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/skills/recommendations")
+async def get_skill_recommendations_endpoint(query: str = None, limit: int = 10):
+    """Get skill recommendations."""
+    return get_skill_recommendations(query, limit)
+
+
+@router.post("/skills/create")
+async def create_new_skill(
+    skill_name: str,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Create a new skill and add to user profile."""
+    try:
+        skill = create_skill_if_not_exists(skill_name)
+        # Automatically add to user's skills
+        from backend.models.user_models import UserSkillCreate
+        user_skill = UserSkillCreate(skill_id=skill['id'])
+        return add_user_skill(current_user.user_id, user_skill)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# Resume endpoints
+@router.post("/resumes")
+async def create_resume_endpoint(
+    title: str,
+    content: str = None,
+    file_url: str = None,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Create a new resume."""
+    try:
+        return create_resume(current_user.user_id, title, content, file_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/resumes")
+async def get_my_resumes(current_user: TokenData = Depends(get_current_user)):
+    """Get all resumes for current user."""
+    return get_user_resumes(current_user.user_id)
+
+
+@router.get("/resumes/{resume_id}")
+async def get_resume_endpoint(
+    resume_id: int,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Get a specific resume."""
+    resume = get_resume(resume_id)
+    if not resume or resume['user_id'] != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return resume
+
+
+@router.put("/resumes/{resume_id}")
+async def update_resume_endpoint(
+    resume_id: int,
+    title: str = None,
+    content: str = None,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Update a resume."""
+    try:
+        return update_resume(resume_id, current_user.user_id, title, content)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/resumes/{resume_id}")
+async def delete_resume_endpoint(
+    resume_id: int,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Delete a resume."""
+    try:
+        delete_resume(resume_id, current_user.user_id)
+        return {"message": "Resume deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/resumes/{resume_id}/primary")
+async def set_primary_resume_endpoint(
+    resume_id: int,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Set a resume as primary."""
+    try:
+        set_primary_resume(resume_id, current_user.user_id)
+        return {"message": "Resume set as primary"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# Enhanced application filtering
+@router.get("/applications/search")
+async def search_my_applications(
+    status: str = None,
+    company: str = None,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Search and filter applications."""
+    from backend.database.mysql_connection import MySQLConnection
+    
+    conn = MySQLConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        where_clauses = ["a.jobseeker_id = %s"]
+        params = [current_user.user_id]
+        
+        if status:
+            where_clauses.append("a.status = %s")
+            params.append(status)
+        
+        if company:
+            where_clauses.append("j.company LIKE %s")
+            params.append(f"%{company}%")
+        
+        query = f"""
+            SELECT a.*, j.title as job_title, j.company
+            FROM applications a
+            JOIN job_postings j ON a.job_id = j.id
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY a.applied_date DESC
+        """
+        
+        cursor.execute(query, tuple(params))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
 
