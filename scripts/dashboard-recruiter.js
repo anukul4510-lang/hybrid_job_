@@ -27,6 +27,7 @@ async function showCandidateSearch() {
                 <input type="text" id="location-filter" placeholder="Location (optional)" 
                        style="padding: 12px; border: none; border-radius: 8px;">
                 <input type="number" id="experience-filter" placeholder="Min years experience" 
+                       min="0" max="50" step="1"
                        style="padding: 12px; border: none; border-radius: 8px;">
                 <select id="job-filter" style="padding: 12px; border: none; border-radius: 8px;">
                     <option value="">For specific job (optional)</option>
@@ -70,12 +71,21 @@ async function showCandidateSearch() {
 async function searchCandidates() {
     const query = document.getElementById('candidate-search-input').value;
     const location = document.getElementById('location-filter').value;
-    const experience = document.getElementById('experience-filter').value;
+    const experienceInput = document.getElementById('experience-filter').value;
     const resultsDiv = document.getElementById('search-results');
     
     if (!query.trim()) {
         showError('Please enter a search query', document.getElementById('content'));
         return;
+    }
+    
+    // Convert experience to integer if provided
+    let experience = null;
+    if (experienceInput && experienceInput.trim() !== '') {
+        const expValue = parseInt(experienceInput, 10);
+        if (!isNaN(expValue) && expValue >= 0) {
+            experience = expValue;
+        }
     }
     
     resultsDiv.innerHTML = createLoader().outerHTML;
@@ -84,7 +94,7 @@ async function searchCandidates() {
         const results = await apiClient.searchCandidates(
             query, 
             location || null, 
-            experience || null, 
+            experience, 
             50
         );
         
@@ -105,6 +115,7 @@ async function searchCandidates() {
             <div class="card" style="margin-bottom: 20px; background: #f0f4ff;">
                 <h4>🤖 AI understood your query as:</h4>
                 <p><strong>Skills:</strong> ${results.filters_applied.skills?.join(', ') || 'Any'}</p>
+                <p><strong>Job of Choice:</strong> ${results.filters_applied.job_of_choice || 'Any'}</p>
                 <p><strong>Location:</strong> ${results.filters_applied.location || 'Any'}</p>
                 <p><strong>Experience:</strong> ${results.filters_applied.min_experience ? results.filters_applied.min_experience + '+ years' : 'Any'}</p>
             </div>
@@ -154,7 +165,9 @@ function renderCandidateCard(candidate) {
             
             <div style="margin: 15px 0;">
                 <p><strong>Skills:</strong> ${skills}</p>
-                ${candidate.bio ? `<p style="color: #555;">${candidate.bio.substring(0, 150)}${candidate.bio.length > 150 ? '...' : ''}</p>` : ''}
+                ${candidate.job_of_choice ? `<p style="margin-top: 8px;"><strong>Job of Choice:</strong> <span style="color: #667eea; font-weight: 600;">${candidate.job_of_choice}</span></p>` : ''}
+                ${candidate.address ? `<p style="margin-top: 5px; color: #666;"><strong>Address:</strong> ${candidate.address.substring(0, 100)}${candidate.address.length > 100 ? '...' : ''}</p>` : ''}
+                ${candidate.bio ? `<p style="color: #555; margin-top: 10px;">${candidate.bio.substring(0, 150)}${candidate.bio.length > 150 ? '...' : ''}</p>` : ''}
             </div>
             
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -196,11 +209,13 @@ async function viewCandidateProfile(candidateId) {
                 <h2>${profile.first_name} ${profile.last_name}</h2>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
-                    <div><strong>Email:</strong> ${profile.email}</div>
+                    <div><strong>Email:</strong> ${profile.email || 'Not provided'}</div>
                     <div><strong>Phone:</strong> ${profile.phone || 'Not provided'}</div>
                     <div><strong>Location:</strong> ${profile.location || 'Not specified'}</div>
                     <div><strong>Experience:</strong> ${profile.years_experience || 0} years</div>
                 </div>
+                ${profile.address ? `<div style="margin: 15px 0;"><strong>Address:</strong><p style="color: #666;">${profile.address}</p></div>` : ''}
+                ${profile.job_of_choice ? `<div style="margin: 15px 0;"><strong>Job of Choice:</strong><p style="color: #667eea; font-weight: 600; font-size: 1.1em;">${profile.job_of_choice}</p></div>` : ''}
                 
                 ${profile.bio ? `<div style="margin: 20px 0;"><strong>Bio:</strong><p>${profile.bio}</p></div>` : ''}
                 
@@ -268,7 +283,7 @@ async function showShortlist() {
     content.innerHTML = `
         <div class="dashboard-header">
             <h2>⭐ Shortlisted Candidates</h2>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
                 <select id="status-filter" style="padding: 10px; border-radius: 8px;">
                     <option value="">All Statuses</option>
                     <option value="shortlisted">Shortlisted</option>
@@ -278,6 +293,7 @@ async function showShortlist() {
                     <option value="rejected">Rejected</option>
                 </select>
                 <button class="btn btn-primary" onclick="filterShortlist()">Filter</button>
+                <button class="btn btn-secondary" onclick="downloadShortlistCSV()">Download CSV</button>
             </div>
         </div>
         <div id="shortlist-results"></div>
@@ -386,6 +402,82 @@ async function updateShortlistStatus(shortlistId, status) {
         loadShortlist();
     } catch (error) {
         showError('Failed to update status: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Download shortlisted candidates as CSV
+ */
+async function downloadShortlistCSV() {
+    try {
+        const shortlist = await apiClient.getShortlist();
+        
+        if (!shortlist || shortlist.length === 0) {
+            alert('No candidates to download.');
+            return;
+        }
+        
+        // CSV headers
+        const headers = ['Name', 'Email', 'Phone', 'Location', 'Address', 'Job of Choice', 'Skills', 'Match Score', 'Status', 'Notes', 'Shortlisted Date'];
+        
+        // CSV rows
+        const rows = shortlist.map(candidate => {
+            const name = `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim();
+            const email = candidate.candidate_email || '';
+            const phone = candidate.phone || '';
+            const location = candidate.location || '';
+            const address = candidate.address || '';
+            const jobOfChoice = candidate.job_of_choice || '';
+            const skills = candidate.skills ? candidate.skills.split(',').map(s => s.trim()).join('; ') : '';
+            const matchScore = candidate.match_score ? Math.round(candidate.match_score) : '';
+            const status = candidate.status || '';
+            const notes = (candidate.notes || '').replace(/"/g, '""'); // Escape quotes
+            const date = candidate.shortlisted_date ? formatDate(candidate.shortlisted_date) : '';
+            
+            // Escape CSV values
+            const escapeCSV = (val) => {
+                if (val === null || val === undefined) return '';
+                const str = String(val);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+            
+            return [
+                escapeCSV(name),
+                escapeCSV(email),
+                escapeCSV(phone),
+                escapeCSV(location),
+                escapeCSV(address),
+                escapeCSV(jobOfChoice),
+                escapeCSV(skills),
+                escapeCSV(matchScore),
+                escapeCSV(status),
+                escapeCSV(notes),
+                escapeCSV(date)
+            ].join(',');
+        });
+        
+        // Combine headers and rows
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `shortlisted_candidates_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showSuccess('CSV downloaded successfully!', document.getElementById('content'));
+    } catch (error) {
+        showError('Failed to download CSV: ' + error.message, document.getElementById('content'));
     }
 }
 
@@ -649,6 +741,7 @@ window.showShortlist = showShortlist;
 window.filterShortlist = filterShortlist;
 window.updateShortlistStatus = updateShortlistStatus;
 window.removeFromShortlist = removeFromShortlist;
+window.downloadShortlistCSV = downloadShortlistCSV;
 window.showMyJobs = showMyJobs;
 window.showCreateJob = showCreateJob;
 window.viewApplications = viewApplications;

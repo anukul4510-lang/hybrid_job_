@@ -9,6 +9,12 @@
     box-sizing: border-box;
 }
 
+.required-star {
+    color: #d32f2f;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -370,5 +376,328 @@ footer {
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
+}
+
+.skill-add-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    background: #f0f4ff;
+    border: 1px solid #cdd9ed;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.skill-add-area input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #aab8d4;
+    border-radius: 6px;
+    font-size: 1em;
+}
+
+.skill-add-area .btn {
+    padding: 10px 18px;
+    font-size: 0.95em;
+    border-radius: 6px;
+}
+
+/* Enhanced Skill Search Container */
+.skill-search-container {
+    margin-bottom: 10px;
+}
+
+.skill-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    border: 2px solid #cdd9ed;
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    transition: all 0.3s ease;
+}
+
+.skill-search-wrapper:hover {
+    border-color: #aab8d4;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.15);
+}
+
+.skill-search-wrapper.focused {
+    border-color: #677eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 6px 20px rgba(102, 126, 234, 0.2);
+    background: #fff;
+}
+
+.skill-search-icon {
+    font-size: 1.2em;
+    margin-right: 12px;
+    color: #667eea;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.skill-search-wrapper input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.05em;
+    padding: 8px 0;
+    color: #333;
+    outline: none;
+}
+
+.skill-search-wrapper input[type="text"]::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.skill-search-loader {
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.skill-search-loader.hidden {
+    display: none;
+}
+
+.loader-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #e0e7ff;
+    border-top: 3px solid #677eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.skill-action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.skill-action-buttons .btn {
+    padding: 12px 20px;
+    font-size: 0.95em;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.skill-action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.skill-search-btn {
+    background: linear-gradient(135deg, #677eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.skill-search-btn:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #677eea 100%) !important;
+}
+
+/* Skill Recommendations Dropdown */
+.skill-recommendations-dropdown {
+    position: relative;
+    margin-top: 12px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.skill-recommendations-dropdown.active {
+    opacity: 1;
+    max-height: 400px;
+    overflow: visible;
+}
+
+.skill-dropdown {
+    background: white;
+    border: 2px solid #e0e7ff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+    position: relative;
+    z-index: 1001;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.skill-dropdown-header {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid #cdd9ed;
+    font-weight: 600;
+    color: #667eea;
+    font-size: 0.9em;
+}
+
+.skill-dropdown-items {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.skill-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f5f7fa;
+    animation: fadeInUp 0.3s ease backwards;
+    gap: 12px;
+}
+
+.skill-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.skill-dropdown-item:hover {
+    background: linear-gradient(90deg, #f8f9ff 0%, #f0f4ff 100%);
+    transform: translateX(4px);
+    box-shadow: -4px 0 0 #677eea;
+}
+
+.skill-dropdown-item.adding {
+    background: linear-gradient(90deg, #d4edda 0%, #c3e6cb 100%);
+    animation: successPulse 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes successPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.skill-icon {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+}
+
+.skill-name {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+    font-size: 1em;
+}
+
+.skill-count {
+    font-size: 0.85em;
+    color: #999;
+    background: #f5f7fa;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.skill-add-icon {
+    font-size: 1.4em;
+    color: #677eea;
+    font-weight: bold;
+    width: 24px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.skill-dropdown-item:hover .skill-add-icon {
+    opacity: 1;
+}
+
+.skill-dropdown-footer {
+    padding: 12px 16px;
+    background: #f8f9ff;
+    border-top: 1px solid #e0e7ff;
+    text-align: center;
+    font-size: 0.85em;
+    color: #667eea;
+    font-style: italic;
+}
+
+.skill-dropdown-hint,
+.skill-dropdown-error {
+    padding: 16px;
+    text-align: center;
+    color: #667eea;
+    font-size: 0.95em;
+}
+
+.skill-dropdown-error {
+    color: #e74c3c;
+}
+
+.job-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+#job-search {
+    font-size: 1.17em;
+    padding: 15px 16px;
+    flex: 1 1 0%;
+    border-radius: 12px 0 0 12px;
+    border: 2.2px solid #bfc9d9;
+    min-width: 180px;
+}
+
+.job-search-btn {
+    border-radius: 0 12px 12px 0;
+    min-width: 140px;
+    font-size: 1.17em;
+    padding: 15px;
+    border: none;
+    background: linear-gradient(90deg,#677eea 0,#7c49a1 100%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 2px 6px #c7c6ec40;
+    transition: 0.16s;
+    cursor: pointer;
+}
+
+.job-search-btn:hover {
+    filter: brightness(1.07);
 }
 

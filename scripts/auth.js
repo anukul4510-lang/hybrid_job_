@@ -87,7 +87,16 @@ if (registerForm) {
         const role = document.getElementById('register-role').value;
         const first_name = document.getElementById('register-first-name')?.value;
         const last_name = document.getElementById('register-last-name')?.value;
-        const phone = document.getElementById('register-phone')?.value;
+        const phoneInput = document.getElementById('register-phone');
+        const countryCodeSelect = document.getElementById('register-country-code');
+        const rawPhone = phoneInput?.value.trim();
+        const countryCode = countryCodeSelect?.value;
+
+        if (rawPhone && !/^\d{7,15}$/.test(rawPhone)) {
+            alert('Please enter a valid phone number (digits only, 7 to 15 digits).');
+            return;
+        }
+        const phone = rawPhone ? countryCode + rawPhone : null;
         const location = document.getElementById('register-location')?.value;
 
         try {

@@ -48,7 +48,7 @@ async def update_user_role(
         raise HTTPException(status_code=400, detail="Invalid role")
     
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -93,12 +93,14 @@ async def delete_user(
     user_id: int,
     current_user: TokenData = Depends(get_current_admin)
 ):
-    """Delete a user account."""
+    """Delete a user account. This will permanently delete the user and all related data."""
     try:
-        delete_user_admin(current_user.user_id, user_id)
-        return {"message": "User deleted successfully"}
+        result = delete_user_admin(current_user.user_id, user_id)
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/logs")
@@ -142,7 +144,7 @@ async def delete_job_admin(
 ):
     """Delete a job posting (admin override)."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute("DELETE FROM job_postings WHERE id = %s", (job_id,))

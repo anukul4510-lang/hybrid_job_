@@ -9,6 +9,47 @@ let currentProfile = null;
 let allJobs = [];
 
 /**
+ * Show home/welcome screen
+ */
+function showHome() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="welcome-hero">
+            <div class="welcome-icon">🚀</div>
+            <h1 class="welcome-title">
+                <span class="gradient-text">Welcome to Your Dashboard</span>
+            </h1>
+            <p class="welcome-subtitle">
+                Your career journey starts here! Manage your profile, explore opportunities, and connect with your dream job.
+            </p>
+            
+            <div class="welcome-quick-actions">
+                <div class="quick-action-card" onclick="showProfile()">
+                    <div class="action-icon">👤</div>
+                    <h3>Complete Profile</h3>
+                    <p>Add your details</p>
+                </div>
+                <div class="quick-action-card" onclick="showSkills()">
+                    <div class="action-icon">🎯</div>
+                    <h3>Build Skills</h3>
+                    <p>Enhance your profile</p>
+                </div>
+                <div class="quick-action-card" onclick="showBrowseJobs()">
+                    <div class="action-icon">🔍</div>
+                    <h3>Browse Jobs</h3>
+                    <p>Find opportunities</p>
+                </div>
+                <div class="quick-action-card" onclick="showRecommendations()">
+                    <div class="action-icon">✨</div>
+                    <h3>AI Matches</h3>
+                    <p>Get recommendations</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Show profile section
  */
 async function showProfile() {
@@ -21,29 +62,56 @@ async function showProfile() {
     try {
         currentProfile = await apiClient.getProfile();
         
+        // Fetch email if not included in profile (for older profiles)
+        if (!currentProfile.email) {
+            try {
+                const currentUser = await apiClient.getCurrentUser();
+                currentProfile.email = currentUser.email || '';
+            } catch (e) {
+                console.warn('Could not fetch email:', e);
+            }
+        }
+        
         const profileHTML = `
             <div class="profile-form">
                 <div class="form-group">
-                    <label>First Name:</label>
-                    <input type="text" id="first-name" value="${currentProfile?.first_name || ''}">
+                    <label>Email:</label>
+                    <input type="email" id="email" value="${currentProfile?.email || ''}" disabled 
+                           style="background-color: #f5f5f5; cursor: not-allowed;" 
+                           title="Email cannot be changed. It was set during registration.">
+                    <small style="color: #666; display: block; margin-top: 5px;">Email is from your registration and cannot be changed</small>
                 </div>
                 <div class="form-group">
-                    <label>Last Name:</label>
-                    <input type="text" id="last-name" value="${currentProfile?.last_name || ''}">
+                    <label>First Name: <span class="required-star">*</span></label>
+                    <input type="text" id="first-name" value="${currentProfile?.first_name || ''}" required>
                 </div>
                 <div class="form-group">
-                    <label>Phone:</label>
-                    <input type="text" id="phone" value="${currentProfile?.phone || ''}">
+                    <label>Last Name: <span class="required-star">*</span></label>
+                    <input type="text" id="last-name" value="${currentProfile?.last_name || ''}" required>
                 </div>
                 <div class="form-group">
-                    <label>Location:</label>
-                    <input type="text" id="location" value="${currentProfile?.location || ''}">
+                    <label>Phone: <span class="required-star">*</span></label>
+                    <input type="text" id="phone" value="${currentProfile?.phone || ''}" disabled required style="background-color: #f5f5f5; cursor: not-allowed;" title="Phone is from your registration and cannot be changed">
+                    <small style="color: #666; display: block; margin-top: 5px;">Phone is from registration and cannot be changed</small>
+                </div>
+                <div class="form-group">
+                    <label>Location: <span class="required-star">*</span></label>
+                    <input type="text" id="location" value="${currentProfile?.location || ''}" placeholder="e.g., San Francisco, CA" required>
+                </div>
+                <div class="form-group full-width">
+                    <label>Address: <span class="required-star">*</span></label>
+                    <textarea id="address" rows="3" placeholder="Enter your full address (street, city, state, zip)" required>${currentProfile?.address || ''}</textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Job of Choice: <span class="required-star">*</span></label>
+                    <input type="text" id="job-of-choice" value="${currentProfile?.job_of_choice || ''}" placeholder="e.g., Software Engineer, Data Analyst, Marketing Manager" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">What type of job are you looking for?</small>
                 </div>
                 <div class="form-group full-width">
                     <label>Bio:</label>
-                    <textarea id="bio" rows="5">${currentProfile?.bio || ''}</textarea>
+                    <textarea id="bio" rows="5" placeholder="Tell us about yourself, your experience, and career goals...">${currentProfile?.bio || ''}</textarea>
                 </div>
-                <button class="btn btn-primary" onclick="updateProfile()">Update Profile</button>
+                <button type="button" class="btn btn-primary" onclick="updateProfile()">Update Profile</button>
             </div>
         `;
         
@@ -52,32 +120,71 @@ async function showProfile() {
         // Profile doesn't exist yet, show create profile form
         const createProfileHTML = `
             <div class="profile-form">
-                <p class="info-message">Complete your profile to get started!</p>
                 <div class="form-group">
-                    <label>First Name:</label>
-                    <input type="text" id="first-name" placeholder="Enter your first name">
+                    <label>Email:</label>
+                    <input type="email" id="email" disabled 
+                           style="background-color: #f5f5f5; cursor: not-allowed;" 
+                           title="Email is from your registration">
+                    <small style="color: #666; display: block; margin-top: 5px;">Email from registration (cannot be changed)</small>
                 </div>
                 <div class="form-group">
-                    <label>Last Name:</label>
-                    <input type="text" id="last-name" placeholder="Enter your last name">
+                    <label>First Name: <span class="required-star">*</span></label>
+                    <input type="text" id="first-name" placeholder="Enter your first name" required>
                 </div>
                 <div class="form-group">
-                    <label>Phone:</label>
-                    <input type="text" id="phone" placeholder="Enter your phone number">
+                    <label>Last Name: <span class="required-star">*</span></label>
+                    <input type="text" id="last-name" placeholder="Enter your last name" required>
                 </div>
                 <div class="form-group">
-                    <label>Location:</label>
-                    <input type="text" id="location" placeholder="e.g., San Francisco, CA">
+                    <label>Phone: <span class="required-star">*</span></label>
+                    <input type="text" id="phone" value="${currentProfile?.phone || ''}" disabled required style="background-color: #f5f5f5; cursor: not-allowed;" title="Phone is from your registration and cannot be changed">
+                    <small style="color: #666; display: block; margin-top: 5px;">Phone is from registration and cannot be changed</small>
+                </div>
+                <div class="form-group">
+                    <label>Location: <span class="required-star">*</span></label>
+                    <input type="text" id="location" placeholder="e.g., San Francisco, CA" required>
+                </div>
+                <div class="form-group full-width">
+                    <label>Address: <span class="required-star">*</span></label>
+                    <textarea id="address" rows="3" placeholder="Enter your full address (street, city, state, zip)" required></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Job of Choice: <span class="required-star">*</span></label>
+                    <input type="text" id="job-of-choice" placeholder="e.g., Software Engineer, Data Analyst, Marketing Manager" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">What type of job are you looking for?</small>
                 </div>
                 <div class="form-group full-width">
                     <label>Bio:</label>
-                    <textarea id="bio" rows="5" placeholder="Tell us about yourself..."></textarea>
+                    <textarea id="bio" rows="5" placeholder="Tell us about yourself, your experience, and career goals..."></textarea>
                 </div>
-                <button class="btn btn-primary" onclick="createProfile()">Create Profile</button>
+                <button type="button" class="btn btn-primary" onclick="createProfile()">Create Profile</button>
             </div>
         `;
         
         content.innerHTML = createProfileHTML;
+        
+        // Pre-fill email and phone in create form
+        try {
+            const currentUser = await apiClient.getCurrentUser();
+            const emailInput = document.getElementById('email');
+            if (emailInput && currentUser.email) {
+                emailInput.value = currentUser.email;
+            }
+            
+            // Try to get phone from profile or user data
+            try {
+                const profile = await apiClient.getProfile();
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput && profile.phone) {
+                    phoneInput.value = profile.phone;
+                }
+            } catch (e) {
+                // Profile doesn't exist yet - phone will be set from registration data
+                console.warn('Could not fetch phone for create form:', e);
+            }
+        } catch (e) {
+            console.warn('Could not fetch user data for create form:', e);
+        }
     }
 }
 
@@ -85,12 +192,27 @@ async function showProfile() {
  * Create new profile
  */
 async function createProfile() {
+    const firstName = document.getElementById('first-name').value.trim();
+    const lastName = document.getElementById('last-name').value.trim();
+    const phone = document.getElementById('phone').value.trim(); // use the disabled value as is
+    const location = document.getElementById('location').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const jobOfChoice = document.getElementById('job-of-choice').value.trim();
+    const bio = document.getElementById('bio').value.trim();
+
+    if (!firstName || !lastName || !phone || !location || !address || !jobOfChoice) {
+        alert('Please fill in all required fields (all except bio).');
+        return;
+    }
+
     const profileData = {
-        first_name: document.getElementById('first-name').value,
-        last_name: document.getElementById('last-name').value,
-        phone: document.getElementById('phone').value,
-        location: document.getElementById('location').value,
-        bio: document.getElementById('bio').value
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone, // use the disabled value as is
+        location: location,
+        address: address,
+        job_of_choice: jobOfChoice,
+        bio: bio
     };
     
     try {
@@ -107,14 +229,28 @@ async function createProfile() {
  * Update profile
  */
 async function updateProfile() {
+    const firstName = document.getElementById('first-name').value.trim();
+    const lastName = document.getElementById('last-name').value.trim();
+    const phone = document.getElementById('phone').value.trim(); // use the disabled value as is
+    const location = document.getElementById('location').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const jobOfChoice = document.getElementById('job-of-choice').value.trim();
+    const bio = document.getElementById('bio').value.trim();
+
+    if (!firstName || !lastName || !phone || !location || !address || !jobOfChoice) {
+        alert('Please fill in all required fields (all except bio).');
+        return;
+    }
+
     const profileData = {
-        first_name: document.getElementById('first-name').value,
-        last_name: document.getElementById('last-name').value,
-        phone: document.getElementById('phone').value,
-        location: document.getElementById('location').value,
-        bio: document.getElementById('bio').value
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone, // use the disabled value as is
+        location: location,
+        address: address,
+        job_of_choice: jobOfChoice,
+        bio: bio
     };
-    
     try {
         await apiClient.updateProfile(profileData);
         showSuccess('Profile updated successfully!', document.getElementById('content'));
@@ -130,9 +266,9 @@ async function showBrowseJobs() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <h2>Browse Jobs</h2>
-        <div class="search-bar">
+        <div class="job-search-bar">
             <input type="text" id="job-search" placeholder="Search for jobs...">
-            <button class="btn btn-primary" onclick="searchJobs()">Search</button>
+            <button type="button" class="job-search-btn" onclick="searchJobs()">Search</button>
         </div>
         <div id="jobs-grid"></div>
     `;
@@ -299,13 +435,13 @@ async function showSkills() {
     content.appendChild(loader);
     
     try {
-        const [mySkills, recommendations] = await Promise.all([
+        const [mySkills, popularSkills] = await Promise.all([
             apiClient.getMySkills(),
             apiClient.getSkillRecommendations()
         ]);
         
         const mySkillsIds = new Set(mySkills.map(s => s.skill_id));
-        const suggestedSkills = recommendations.filter(s => !mySkillsIds.has(s.id));
+        const suggestedSkills = popularSkills.filter(s => !mySkillsIds.has(s.id));
         
         content.innerHTML = `
             <h2>My Skills</h2>
@@ -316,7 +452,7 @@ async function showSkills() {
                 ${mySkills.length > 0 ? mySkills.map(skill => `
                     <div class="job-card" style="display: flex; justify-content: space-between; align-items: center;">
                         <span><strong>${skill.skill_name}</strong> - ${skill.proficiency_level}</span>
-                        <button class="btn btn-danger" onclick="removeSkill(${skill.skill_id})">Remove</button>
+                        <button type="button" class="btn btn-danger" onclick="removeSkill(${skill.skill_id}, event)">Remove</button>
                     </div>
                 `).join('') : '<p>No skills added yet. Add skills to improve job matching!</p>'}
             </div>
@@ -324,13 +460,24 @@ async function showSkills() {
             <!-- Add New Skill -->
             <div style="margin-bottom: 30px;">
                 <h3>Add New Skill:</h3>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="skill-input" placeholder="Type skill name or search..." 
-                           style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px;">
-                    <button class="btn btn-primary" onclick="addCustomSkill()">Add</button>
-                    <button class="btn btn-secondary" onclick="searchSkills()">Search</button>
+                <div class="skill-search-container">
+                    <div class="skill-search-wrapper">
+                        <div class="skill-search-icon">🔍</div>
+                        <input type="text" id="skill-input" placeholder="Start typing to search skills..." autocomplete="off">
+                        <div id="skill-search-loader" class="skill-search-loader hidden">
+                            <div class="loader-spinner"></div>
+                        </div>
+                    </div>
+                    <div class="skill-action-buttons">
+                        <button type="button" class="btn btn-primary" onclick="addCustomSkill(event)">
+                            <span>➕</span> Add
+                        </button>
+                        <button type="button" class="btn btn-secondary skill-search-btn" onclick="searchSkills(event)">
+                            <span>🔎</span> Search
+                        </button>
+                    </div>
                 </div>
-                <div id="skill-recommendations"></div>
+                <div id="skill-recommendations" class="skill-recommendations-dropdown"></div>
             </div>
             
             <!-- Recommended Skills -->
@@ -338,7 +485,7 @@ async function showSkills() {
                 <h3>Popular Skills:</h3>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                     ${suggestedSkills.slice(0, 15).map(skill => `
-                        <button class="btn btn-secondary" onclick="addSkillByName('${skill.name}')" 
+                        <button type="button" class="btn btn-secondary" onclick="addSkillByName('${skill.name.replace(/'/g, "\\'")}', event)" 
                                 style="padding: 8px 16px;">
                             ${skill.name} ${skill.user_count ? `(${skill.user_count} users)` : ''}
                         </button>
@@ -347,14 +494,82 @@ async function showSkills() {
             </div>
         `;
         
-        // Add real-time search for skills
-        document.getElementById('skill-input').addEventListener('input', debounce(async (e) => {
-            const query = e.target.value;
+        // Add real-time search for skills with enhanced UX
+        const skillInput = document.getElementById('skill-input');
+        const loader = document.getElementById('skill-search-loader');
+        const recommendations = document.getElementById('skill-recommendations');
+        
+        // Focus effect
+        skillInput.addEventListener('focus', () => {
+            skillInput.parentElement.classList.add('focused');
+        });
+        
+        skillInput.addEventListener('blur', () => {
+            // Delay to allow clicks on dropdown items
+            setTimeout(() => {
+                skillInput.parentElement.classList.remove('focused');
+                const activeElement = document.activeElement;
+                if (!recommendations.contains(activeElement) && activeElement !== skillInput) {
+                    recommendations.classList.remove('active');
+                }
+            }, 300);
+        });
+        
+        // Keep dropdown open when clicking inside it
+        recommendations.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Prevent input blur
+        });
+        
+        // Real-time search with loading indicator
+        skillInput.addEventListener('input', debounce(async (e) => {
+            const query = e.target.value.trim();
+            
+            if (query.length === 0) {
+                recommendations.innerHTML = '';
+                recommendations.classList.remove('active');
+                if (loader) loader.classList.add('hidden');
+                return;
+            }
+            
             if (query.length > 1) {
-                const results = await apiClient.getSkillRecommendations(query);
-                displaySkillRecommendations(results);
+                // Show loader
+                if (loader) {
+                    loader.classList.remove('hidden');
+                }
+                recommendations.classList.add('active');
+                
+                try {
+                    const results = await apiClient.getSkillRecommendations(query);
+                    displaySkillRecommendations(results);
+                } catch (error) {
+                    if (loader) loader.classList.add('hidden');
+                    recommendations.innerHTML = `
+                        <div class="skill-dropdown">
+                            <div class="skill-dropdown-error">
+                                ⚠️ Failed to search skills. Please try again.
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (loader) loader.classList.add('hidden');
+                recommendations.innerHTML = `
+                    <div class="skill-dropdown">
+                        <div class="skill-dropdown-hint">
+                            💡 Type at least 2 characters to search...
+                        </div>
+                    </div>
+                `;
             }
         }, 300));
+        
+        // Handle Enter key
+        skillInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchSkills(e);
+            }
+        });
         
     } catch (error) {
         content.innerHTML = '<div class="error-message">Failed to load skills: ' + error.message + '</div>';
@@ -366,19 +581,44 @@ async function showSkills() {
  */
 function displaySkillRecommendations(skills) {
     const container = document.getElementById('skill-recommendations');
+    const loader = document.getElementById('skill-search-loader');
+    
+    // Hide loader
+    if (loader) {
+        loader.classList.add('hidden');
+    }
+    
     if (!skills || skills.length === 0) {
         container.innerHTML = '';
+        container.classList.remove('active');
         return;
     }
     
+    // Show dropdown
+    container.classList.add('active');
+    
     container.innerHTML = `
-        <div class="card" style="max-height: 200px; overflow-y: auto;">
-            ${skills.map(skill => `
-                <div style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;"
-                     onclick="addSkillByName('${skill.name}')">
-                    ${skill.name}
-                </div>
-            `).join('')}
+        <div class="skill-dropdown">
+            <div class="skill-dropdown-header">
+                <span>💡 Found ${skills.length} skill${skills.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="skill-dropdown-items">
+                ${skills.slice(0, 8).map((skill, index) => `
+                    <div class="skill-dropdown-item" 
+                         onclick="addSkillByName('${skill.name.replace(/'/g, "\\'")}', event)"
+                         style="animation-delay: ${index * 0.05}s">
+                        <span class="skill-icon">✨</span>
+                        <span class="skill-name">${skill.name}</span>
+                        ${skill.user_count ? `<span class="skill-count">${skill.user_count} users</span>` : ''}
+                        <span class="skill-add-icon">+</span>
+                    </div>
+                `).join('')}
+                ${skills.length > 8 ? `
+                    <div class="skill-dropdown-footer">
+                        <span>And ${skills.length - 8} more... (keep typing to refine)</span>
+                    </div>
+                ` : ''}
+            </div>
         </div>
     `;
 }
@@ -386,28 +626,69 @@ function displaySkillRecommendations(skills) {
 /**
  * Search skills
  */
-async function searchSkills() {
-    const query = document.getElementById('skill-input').value;
+async function searchSkills(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    const query = document.getElementById('skill-input').value.trim();
+    const loader = document.getElementById('skill-search-loader');
+    const recommendations = document.getElementById('skill-recommendations');
+    
     if (query.length < 2) {
-        showError('Please enter at least 2 characters', document.getElementById('content'));
+        recommendations.innerHTML = `
+            <div class="skill-dropdown">
+                <div class="skill-dropdown-hint">
+                    💡 Please enter at least 2 characters to search...
+                </div>
+            </div>
+        `;
+        recommendations.classList.add('active');
         return;
     }
+    
+    // Show loader
+    if (loader) {
+        loader.classList.remove('hidden');
+    }
+    recommendations.classList.add('active');
     
     try {
         const results = await apiClient.getSkillRecommendations(query);
         displaySkillRecommendations(results);
     } catch (error) {
-        showError('Failed to search skills: ' + error.message, document.getElementById('content'));
+        if (loader) loader.classList.add('hidden');
+        recommendations.innerHTML = `
+            <div class="skill-dropdown">
+                <div class="skill-dropdown-error">
+                    ⚠️ Failed to search skills: ${error.message}
+                </div>
+            </div>
+        `;
     }
 }
 
 /**
  * Add custom skill by typing
  */
-async function addCustomSkill() {
+async function addCustomSkill(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const skillName = document.getElementById('skill-input').value.trim();
     if (!skillName) {
-        showError('Please enter a skill name', document.getElementById('content'));
+        const recommendations = document.getElementById('skill-recommendations');
+        recommendations.innerHTML = `
+            <div class="skill-dropdown">
+                <div class="skill-dropdown-hint">
+                    💡 Please enter a skill name to add...
+                </div>
+            </div>
+        `;
+        recommendations.classList.add('active');
         return;
     }
     
@@ -416,6 +697,7 @@ async function addCustomSkill() {
         showSuccess('Skill added successfully!', document.getElementById('content'));
         document.getElementById('skill-input').value = '';
         document.getElementById('skill-recommendations').innerHTML = '';
+        document.getElementById('skill-recommendations').classList.remove('active');
         showSkills(); // Reload
     } catch (error) {
         showError('Failed to add skill: ' + error.message, document.getElementById('content'));
@@ -425,10 +707,23 @@ async function addCustomSkill() {
 /**
  * Add skill by name (from recommendations)
  */
-async function addSkillByName(skillName) {
+async function addSkillByName(skillName, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     try {
+        // Visual feedback - highlight the clicked item
+        if (event && event.target) {
+            event.target.closest('.skill-dropdown-item')?.classList.add('adding');
+        }
+        
         await apiClient.createSkill(skillName);
-        showSuccess(`${skillName} added!`, document.getElementById('content'));
+        showSuccess(`✨ ${skillName} added!`, document.getElementById('content'));
+        document.getElementById('skill-input').value = '';
+        document.getElementById('skill-recommendations').innerHTML = '';
+        document.getElementById('skill-recommendations').classList.remove('active');
         showSkills(); // Reload
     } catch (error) {
         showError('Failed to add skill: ' + error.message, document.getElementById('content'));
@@ -452,7 +747,12 @@ async function addSkill() {
 /**
  * Remove skill
  */
-async function removeSkill(skillId) {
+async function removeSkill(skillId, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     try {
         await apiClient.removeSkill(skillId);
         showSuccess('Skill removed successfully!', document.getElementById('content'));
@@ -820,6 +1120,7 @@ async function deleteResume(resumeId) {
 }
 
 // Make functions globally available
+window.showHome = showHome;
 window.showProfile = showProfile;
 window.showBrowseJobs = showBrowseJobs;
 window.searchJobs = searchJobs;
@@ -843,4 +1144,17 @@ window.editResume = editResume;
 window.updateResume = updateResume;
 window.setPrimaryResume = setPrimaryResume;
 window.deleteResume = deleteResume;
+
+// Show home screen on page load
+window.addEventListener('DOMContentLoaded', () => {
+    // Only show home if we're on the dashboard page
+    // Authentication is handled by auth.js and api-client.js
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('jobseeker-dashboard')) {
+        showHome();
+    }
+});
+
+// Log to confirm the script loaded
+console.log('Dashboard Jobseeker script loaded successfully');
 

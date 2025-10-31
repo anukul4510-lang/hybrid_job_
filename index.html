@@ -67,8 +67,19 @@
                         <input type="text" id="register-last-name">
                     </div>
                     <div class="form-group">
-                        <label for="register-phone">Phone:</label>
-                        <input type="tel" id="register-phone">
+                        <label for="register-phone">Phone: <span class="required-star">*</span></label>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <select id="register-country-code" required style="padding: 10px; border-radius: 8px; width: 100px;">
+                                <option value="+1">+1 (US/Canada)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+91">+91 (India)</option>
+                                <option value="+61">+61 (Australia)</option>
+                                <option value="+81">+81 (Japan)</option>
+                                <!-- Add more country codes as needed -->
+                            </select>
+                            <input type="tel" id="register-phone" placeholder="Only numbers, e.g., 9876543210" maxlength="15" required pattern="[0-9]{7,15}" title="Only numbers, 7-15 digits">
+                        </div>
+                        <small style="color: #666; display: block; margin-top: 5px;">Enter phone number without country code (numbers only, 7-15 digits)</small>
                     </div>
                     <div class="form-group">
                         <label for="register-location">Location:</label>

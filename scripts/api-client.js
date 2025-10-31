@@ -191,9 +191,8 @@ class ApiClient {
     }
 
     async updateApplicationStatus(applicationId, status) {
-        return this.request(`/recruiter/applications/${applicationId}/status`, {
+        return this.request(`/recruiter/applications/${applicationId}/status?status=${status}`, {
             method: 'PUT',
-            body: JSON.stringify({ status }),
         });
     }
 

@@ -172,7 +172,7 @@ async def update_application_status(
 async def search_candidates(
     query: str,
     location: str = None,
-    min_experience: int = None,
+    min_experience: Optional[int] = None,
     limit: int = 20,
     current_user: TokenData = Depends(get_current_recruiter)
 ):
@@ -181,8 +181,13 @@ async def search_candidates(
         filters = {}
         if location:
             filters['location'] = location
-        if min_experience:
-            filters['min_experience'] = min_experience
+        if min_experience is not None:
+            # Convert to int and ensure it's valid
+            try:
+                filters['min_experience'] = int(min_experience)
+            except (ValueError, TypeError):
+                # Invalid value, skip it
+                pass
         
         return advanced_user_search(query, filters, limit)
     except Exception as e:

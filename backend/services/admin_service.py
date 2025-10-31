@@ -11,7 +11,7 @@ import mysql.connector
 def create_default_admin():
     """Create default admin account if it doesn't exist."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Check if admin exists
@@ -55,7 +55,7 @@ def log_admin_action(admin_id: int, action: str, target_type: str = None,
                      target_id: int = None, details: str = None):
     """Log admin activity for audit trail."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
@@ -158,7 +158,7 @@ def get_all_users_admin(limit: int = 100, offset: int = 0) -> List[Dict]:
 def update_user_status(admin_id: int, user_id: int, action: str) -> bool:
     """Enable or disable user account."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
         # Add status column if needed (we'll add this to schema)
@@ -206,19 +206,119 @@ def get_admin_logs(limit: int = 100) -> List[Dict]:
         conn.close()
 
 
-def delete_user_admin(admin_id: int, user_id: int) -> bool:
-    """Delete a user (admin function)."""
+def delete_user_admin(admin_id: int, user_id: int) -> Dict:
+    """
+    Delete a user (admin function).
+    Handles cleanup of related data including ChromaDB embeddings.
+    
+    Args:
+        admin_id: ID of admin performing the deletion
+        user_id: ID of user to delete
+        
+    Returns:
+        Dict with deletion details
+    """
+    from backend.database.chroma_connection import ChromaConnection
+    
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
+        # Prevent deleting yourself
+        if admin_id == user_id:
+            raise ValueError("Cannot delete your own account")
+        
+        # Check if user exists and get user info
+        cursor.execute(
+            """
+            SELECT id, email, role 
+            FROM users 
+            WHERE id = %s
+            """,
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        
+        if not user:
+            raise ValueError("User not found")
+        
+        # Prevent deleting default admin account
+        if user['email'] == 'admin@gmail.com':
+            raise ValueError("Cannot delete the default admin account")
+        
+        # Get user's resumes for ChromaDB cleanup
+        cursor.execute(
+            "SELECT id FROM resumes WHERE user_id = %s",
+            (user_id,)
+        )
+        resume_ids = [row['id'] for row in cursor.fetchall()]
+        
+        # Get user's job postings for ChromaDB cleanup (if recruiter)
+        job_ids = []
+        if user['role'] == 'recruiter':
+            cursor.execute(
+                "SELECT id FROM job_postings WHERE recruiter_id = %s",
+                (user_id,)
+            )
+            job_ids = [row['id'] for row in cursor.fetchall()]
+        
+        # Delete ChromaDB embeddings for resumes
+        try:
+            for resume_id in resume_ids:
+                ChromaConnection.delete_resume_embedding(resume_id)
+            print(f"Deleted {len(resume_ids)} resume embeddings from ChromaDB")
+        except Exception as e:
+            print(f"Warning: Error deleting resume embeddings from ChromaDB: {e}")
+        
+        # Delete ChromaDB embeddings for job postings (if recruiter)
+        try:
+            for job_id in job_ids:
+                ChromaConnection.delete_job_embedding(job_id)
+            print(f"Deleted {len(job_ids)} job embeddings from ChromaDB")
+        except Exception as e:
+            print(f"Warning: Error deleting job embeddings from ChromaDB: {e}")
+        
+        # Delete user (CASCADE will handle related records in MySQL)
         cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        deleted = cursor.rowcount > 0
+        
+        if not deleted:
+            raise ValueError("Failed to delete user")
+        
         conn.commit()
-        log_admin_action(admin_id, "User deleted", "user", user_id)
-        return True
+        
+        # Log admin action
+        log_admin_action(
+            admin_id, 
+            f"Deleted user: {user['email']} (Role: {user['role']})", 
+            "user", 
+            user_id,
+            f"Deleted {len(resume_ids)} resumes, {len(job_ids)} job postings"
+        )
+        
+        return {
+            "success": True,
+            "message": "User deleted successfully",
+            "deleted_user": {
+                "id": user_id,
+                "email": user['email'],
+                "role": user['role']
+            },
+            "cleanup": {
+                "resumes_deleted": len(resume_ids),
+                "job_postings_deleted": len(job_ids),
+                "embeddings_cleaned": len(resume_ids) + len(job_ids)
+            }
+        }
+        
+    except ValueError as e:
+        raise e
     except mysql.connector.Error as e:
         conn.rollback()
         raise ValueError(f"Database error: {e}")
+    except Exception as e:
+        conn.rollback()
+        raise ValueError(f"Error deleting user: {e}")
     finally:
         cursor.close()
         conn.close()

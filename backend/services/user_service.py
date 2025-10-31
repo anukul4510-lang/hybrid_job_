@@ -19,11 +19,12 @@ def create_user_profile(user_id: int, profile_data: UserProfileCreate) -> dict:
     try:
         cursor.execute(
             """
-            INSERT INTO user_profiles (user_id, first_name, last_name, phone, location, bio)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO user_profiles (user_id, first_name, last_name, phone, location, address, job_of_choice, bio)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (user_id, profile_data.first_name, profile_data.last_name, 
-             profile_data.phone, profile_data.location, profile_data.bio)
+             profile_data.phone, profile_data.location, profile_data.address, 
+             profile_data.job_of_choice, profile_data.bio)
         )
         
         profile_id = cursor.lastrowid
@@ -43,13 +44,18 @@ def create_user_profile(user_id: int, profile_data: UserProfileCreate) -> dict:
 
 
 def get_user_profile(user_id: int) -> Optional[dict]:
-    """Get user profile by user ID."""
+    """Get user profile by user ID, including email from users table."""
     conn = MySQLConnection.get_connection()
     cursor = conn.cursor(dictionary=True)
     
     try:
         cursor.execute(
-            "SELECT * FROM user_profiles WHERE user_id = %s",
+            """
+            SELECT up.*, u.email
+            FROM user_profiles up
+            JOIN users u ON up.user_id = u.id
+            WHERE up.user_id = %s
+            """,
             (user_id,)
         )
         return cursor.fetchone()
@@ -79,6 +85,12 @@ def update_user_profile(user_id: int, profile_data: UserProfileUpdate) -> dict:
         if profile_data.location is not None:
             update_fields.append("location = %s")
             values.append(profile_data.location)
+        if profile_data.address is not None:
+            update_fields.append("address = %s")
+            values.append(profile_data.address)
+        if profile_data.job_of_choice is not None:
+            update_fields.append("job_of_choice = %s")
+            values.append(profile_data.job_of_choice)
         if profile_data.bio is not None:
             update_fields.append("bio = %s")
             values.append(profile_data.bio)

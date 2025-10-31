@@ -55,16 +55,25 @@ async function loadUsers() {
         const usersHTML = `
             <h2 style="margin-top: 40px;">All Users</h2>
             ${users.map(user => `
-                <div class="job-card">
-                    <h3>${user.email}</h3>
-                    <p>Role: <strong>${user.role}</strong></p>
-                    <p>Name: ${user.first_name || ''} ${user.last_name || ''}</p>
-                    <p>Registered: ${formatDate(user.created_at)}</p>
-                    <select id="role-select-${user.id}" onchange="updateUserRole(${user.id}, this.value)">
-                        <option value="jobseeker" ${user.role === 'jobseeker' ? 'selected' : ''}>Job Seeker</option>
-                        <option value="recruiter" ${user.role === 'recruiter' ? 'selected' : ''}>Recruiter</option>
-                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
-                    </select>
+                <div class="job-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1;">
+                        <h3>${user.email}</h3>
+                        <p>Role: <strong>${user.role}</strong></p>
+                        <p>Name: ${user.first_name || ''} ${user.last_name || ''}</p>
+                        <p>Registered: ${formatDate(user.created_at)}</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="role-select-${user.id}" onchange="updateUserRole(${user.id}, this.value)" 
+                                style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                            <option value="jobseeker" ${user.role === 'jobseeker' ? 'selected' : ''}>Job Seeker</option>
+                            <option value="recruiter" ${user.role === 'recruiter' ? 'selected' : ''}>Recruiter</option>
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                        <button type="button" class="btn btn-danger" onclick="deleteUser(${user.id}, '${user.email.replace(/'/g, "\\'")}')" 
+                                style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            🗑️ Delete
+                        </button>
+                    </div>
                 </div>
             `).join('')}
         `;
@@ -96,8 +105,56 @@ async function updateUserRole(userId, newRole) {
     }
 }
 
+/**
+ * Delete user
+ */
+async function deleteUser(userId, userEmail) {
+    // Strong confirmation warning
+    const confirmMessage = `⚠️ WARNING: This will permanently delete the user "${userEmail}" and ALL their data!\n\n` +
+                          `This includes:\n` +
+                          `- User profile\n` +
+                          `- All skills\n` +
+                          `- All resumes\n` +
+                          `- All applications\n` +
+                          `- All saved jobs\n` +
+                          `- Job postings (if recruiter)\n` +
+                          `- Shortlisted candidates (if recruiter)\n\n` +
+                          `This action CANNOT be undone!\n\n` +
+                          `Type "DELETE" to confirm:`;
+    
+    const confirmation = prompt(confirmMessage);
+    
+    if (confirmation !== 'DELETE') {
+        if (confirmation !== null) {
+            alert('Deletion cancelled. You must type "DELETE" exactly to confirm.');
+        }
+        return;
+    }
+    
+    try {
+        const result = await apiClient.deleteUser(userId);
+        
+        // Show detailed success message
+        const message = `✅ User deleted successfully!\n\n` +
+                       `Deleted: ${result.deleted_user.email}\n` +
+                       `Role: ${result.deleted_user.role}\n` +
+                       `Resumes deleted: ${result.cleanup.resumes_deleted}\n` +
+                       `Job postings deleted: ${result.cleanup.job_postings_deleted}\n` +
+                       `Embeddings cleaned: ${result.cleanup.embeddings_cleaned}`;
+        
+        alert(message);
+        
+        // Reload users list
+        await loadUsers();
+        await loadDashboard(); // Refresh stats
+    } catch (error) {
+        showError('Failed to delete user: ' + error.message, document.getElementById('content'));
+    }
+}
+
 // Make functions globally available
 window.updateUserRole = updateUserRole;
+window.deleteUser = deleteUser;
 
 // Load dashboard on page load
 window.addEventListener('DOMContentLoaded', () => {

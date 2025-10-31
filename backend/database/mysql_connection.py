@@ -58,10 +58,121 @@ async def init_mysql_db():
         print(f"Error initializing MySQL database: {e}")
 
 
+def seed_default_skills(cursor, conn):
+    """Seed the database with common/default skills."""
+    # Comprehensive list of common skills
+    default_skills = [
+        # Programming Languages
+        "Python", "JavaScript", "Java", "C++", "C#", "Go", "Rust", "Swift", 
+        "Kotlin", "PHP", "Ruby", "TypeScript", "Scala", "R", "MATLAB", "Perl",
+        
+        # Web Development
+        "HTML", "CSS", "React", "Vue.js", "Angular", "Node.js", "Express.js",
+        "Django", "Flask", "Spring Boot", "ASP.NET", "Laravel", "Rails",
+        "Next.js", "Nuxt.js", "Svelte", "jQuery", "Bootstrap", "Tailwind CSS",
+        
+        # Databases
+        "MySQL", "PostgreSQL", "MongoDB", "Redis", "SQLite", "Oracle", "SQL Server",
+        "Cassandra", "Elasticsearch", "DynamoDB", "Firebase", "Supabase",
+        
+        # Cloud & DevOps
+        "AWS", "Azure", "Google Cloud Platform", "Docker", "Kubernetes", "Jenkins",
+        "CI/CD", "Terraform", "Ansible", "Git", "GitHub", "GitLab", "Linux",
+        "Bash Scripting", "Shell Scripting", "Nginx", "Apache",
+        
+        # Mobile Development
+        "iOS Development", "Android Development", "React Native", "Flutter",
+        "Xamarin", "SwiftUI", "Kotlin Multiplatform",
+        
+        # Data Science & AI
+        "Machine Learning", "Deep Learning", "Data Analysis", "Data Science",
+        "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "SciPy",
+        "Natural Language Processing", "Computer Vision", "Big Data", "Hadoop",
+        "Spark", "Tableau", "Power BI", "Jupyter",
+        
+        # Backend & APIs
+        "REST API", "GraphQL", "Microservices", "API Design", "RESTful Services",
+        "WebSocket", "gRPC", "FastAPI", "API Gateway",
+        
+        # Testing
+        "Unit Testing", "Integration Testing", "Test-Driven Development",
+        "Jest", "Pytest", "Selenium", "Cypress", "JUnit",
+        
+        # Design & UI/UX
+        "UI/UX Design", "Figma", "Adobe XD", "Sketch", "Wireframing", "Prototyping",
+        "User Research", "Design Systems", "Material Design",
+        
+        # Project Management & Tools
+        "Agile", "Scrum", "Kanban", "JIRA", "Confluence", "Project Management",
+        "Version Control", "Git Workflow",
+        
+        # Soft Skills
+        "Communication", "Leadership", "Teamwork", "Problem Solving",
+        "Critical Thinking", "Time Management", "Collaboration", "Adaptability",
+        "Presentation Skills", "Customer Service",
+        
+        # Business & Marketing
+        "Digital Marketing", "SEO", "SEM", "Content Marketing", "Social Media Marketing",
+        "Analytics", "Google Analytics", "Business Analysis",
+        
+        # Other Technical Skills
+        "Blockchain", "Web3", "Solidity", "Smart Contracts", "Cryptography",
+        "Cybersecurity", "Network Security", "Penetration Testing",
+        "System Design", "Architecture", "Code Review", "Debugging",
+        "Performance Optimization", "Scaling", "Load Balancing",
+        
+        # Domain-Specific
+        "E-commerce", "FinTech", "HealthTech", "EdTech", "SaaS",
+        "CRM", "ERP", "Salesforce", "HubSpot",
+        
+        # Additional Modern Skills
+        "Webpack", "Vite", "NPM", "Yarn", "Package Management",
+        "Responsive Design", "Progressive Web Apps", "Serverless",
+        "Lambda Functions", "Cloud Functions", "Edge Computing",
+        
+        # Quality Assurance
+        "QA Testing", "Manual Testing", "Automated Testing", "Performance Testing",
+        "Security Testing", "Regression Testing",
+        
+        # Content & Documentation
+        "Technical Writing", "Documentation", "Content Creation", "Blogging",
+        "Copywriting",
+        
+        # Additional Languages
+        "Dart", "Lua", "Haskell", "Erlang", "Elixir", "Clojure",
+        
+        # Additional Frameworks & Libraries
+        "Redux", "MobX", "Zustand", "Three.js", "D3.js", "Chart.js",
+        "Material-UI", "Ant Design", "Chakra UI",
+    ]
+    
+    try:
+        # Insert skills if they don't exist (using INSERT IGNORE to skip duplicates)
+        skills_inserted = 0
+        for skill in default_skills:
+            try:
+                cursor.execute(
+                    "INSERT IGNORE INTO skills (name) VALUES (%s)",
+                    (skill,)
+                )
+                if cursor.rowcount > 0:
+                    skills_inserted += 1
+            except mysql.connector.Error as e:
+                # Skip if error occurs (skill might already exist)
+                pass
+        
+        if skills_inserted > 0:
+            conn.commit()
+            print(f"Seeded {skills_inserted} new skills to the database")
+    except mysql.connector.Error as e:
+        print(f"Error seeding skills: {e}")
+        conn.rollback()
+
+
 async def create_tables():
     """Create database tables if they don't exist."""
     conn = MySQLConnection.get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     # Users table
     cursor.execute("""
@@ -252,7 +363,26 @@ async def create_tables():
         )
     """)
     
+    # Add missing columns to user_profiles for backward compatibility
+    try:
+        cursor.execute("SHOW COLUMNS FROM user_profiles LIKE 'address'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN address TEXT")
+    except mysql.connector.Error:
+        pass  # Column might already exist or table might not exist
+    
+    try:
+        cursor.execute("SHOW COLUMNS FROM user_profiles LIKE 'job_of_choice'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN job_of_choice VARCHAR(255)")
+    except mysql.connector.Error:
+        pass  # Column might already exist or table might not exist
+    
     conn.commit()
+    
+    # Seed default skills if they don't exist
+    seed_default_skills(cursor, conn)
+    
     cursor.close()
     conn.close()
     print("Database tables created successfully")

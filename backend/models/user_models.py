@@ -13,6 +13,8 @@ class UserProfileCreate(BaseModel):
     last_name: str
     phone: Optional[str] = None
     location: Optional[str] = None
+    address: Optional[str] = None
+    job_of_choice: Optional[str] = None
     bio: Optional[str] = None
 
 
@@ -22,6 +24,8 @@ class UserProfileUpdate(BaseModel):
     last_name: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+    address: Optional[str] = None
+    job_of_choice: Optional[str] = None
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
 
@@ -34,6 +38,9 @@ class UserProfileResponse(BaseModel):
     last_name: str
     phone: Optional[str]
     location: Optional[str]
+    address: Optional[str]
+    job_of_choice: Optional[str]
+    email: Optional[str] = None  # Email from users table
     bio: Optional[str]
     profile_picture: Optional[str]
     created_at: datetime
