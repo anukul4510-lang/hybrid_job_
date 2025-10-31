@@ -230,13 +230,47 @@ class ApiClient {
         });
     }
 
-    // Resume endpoints
-    async createResume(title, content, fileUrl) {
-        const params = new URLSearchParams({ title });
-        if (content) params.append('content', content);
-        if (fileUrl) params.append('file_url', fileUrl);
-        return this.request(`/jobseeker/resumes?${params}`, {
+    // Resume endpoints - upload file
+    async uploadResumeFile(title, file) {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('file', file);
+        
+        const url = `${API_BASE_URL}/jobseeker/resumes/upload-file`;
+        const response = await fetch(url, {
             method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getToken()}`,
+            },
+            body: formData,
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.error('Authentication failed. Redirecting to login...');
+                this.removeToken();
+                window.location.href = 'index.html';
+                return;
+            }
+            throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        return data;
+    }
+
+    // Resume endpoints - add by URL
+    async addResumeByUrl(title, fileUrl) {
+        return this.request('/jobseeker/resumes/add-url', {
+            method: 'POST',
+            body: JSON.stringify({ title, file_url: fileUrl }),
+        });
+    }
+
+    // Resume endpoints - build from structured data
+    async buildResume(resumeData) {
+        return this.request('/jobseeker/resumes/build', {
+            method: 'POST',
+            body: JSON.stringify(resumeData),
         });
     }
 

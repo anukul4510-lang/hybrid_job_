@@ -13,40 +13,46 @@
             margin-top: 20px;
         }
         .sidebar {
-            background: #667eea;
+            background: linear-gradient(135deg, #0B3D91 0%, #4169E1 100%);
             color: white;
             padding: 20px;
             border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(11, 61, 145, 0.3);
         }
         .sidebar button {
             display: block;
             width: 100%;
             padding: 12px;
             margin-bottom: 10px;
-            background: white;
-            color: #667eea;
+            background: #F8F8FF;
+            color: #0B3D91;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            transition: all 0.3s ease;
         }
         .sidebar button:hover {
-            background: #764ba2;
-            color: white;
+            background: #4169E1;
+            color: #F8F8FF;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
         
         .sidebar .home-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+            color: #F8F8FF;
             font-weight: 700;
             margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+            border: 2px solid rgba(212, 175, 55, 0.3);
         }
         
         .sidebar .home-btn:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            background: linear-gradient(135deg, #D4AF37 0%, #4169E1 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+            border-color: #D4AF37;
         }
         .content-area {
             background: white;
@@ -104,7 +110,7 @@
         }
         
         .gradient-text {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(135deg, #0B3D91 0%, #4169E1 50%, #D4AF37 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -164,8 +170,8 @@
         
         .quick-action-card:hover {
             transform: translateY(-8px) scale(1.02);
-            border-color: #667eea;
-            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.2);
+            border-color: #D4AF37;
+            box-shadow: 0 12px 30px rgba(212, 175, 55, 0.3);
         }
         
         .action-icon {

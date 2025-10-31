@@ -34,10 +34,24 @@ async function showCandidateSearch() {
                 </select>
             </div>
             
-            <button class="btn btn-primary" onclick="searchCandidates()" 
-                    style="width: 100%; padding: 15px; font-size: 1.1rem;">
-                Search Candidates
+            <button class="btn btn-primary" id="search-candidates-btn" onclick="searchCandidates()" 
+                    style="width: 100%; padding: 16px 20px; font-size: 1.15rem; font-weight: 700; 
+                           background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+                           color: #F8F8FF;
+                           border: 2px solid rgba(212, 175, 55, 0.3);
+                           box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+                           transition: all 0.3s ease;
+                           cursor: pointer;">
+                🔍 Search Candidates
             </button>
+            
+            <style>
+                #search-candidates-btn:hover {
+                    background: linear-gradient(135deg, #4169E1 0%, #0B3D91 50%, #D4AF37 100%) !important;
+                    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+                    transform: translateY(-2px);
+                }
+            </style>
         </div>
         
         <div id="search-results"></div>
@@ -632,10 +646,13 @@ async function viewApplications(jobId) {
             return;
         }
         
-        const appsHTML = applications.map(app => `
+        const appsHTML = applications.map(app => {
+            const companyName = app.recruiter_company_name || 'Company not specified';
+            return `
             <div class="job-card">
                 <h3>${app.first_name} ${app.last_name}</h3>
                 <p>Email: ${app.email}</p>
+                <p>Company: <strong style="color: #0B3D91;">${companyName}</strong></p>
                 <p>Status: <strong>${app.status}</strong></p>
                 <p>Applied: ${formatDate(app.applied_date)}</p>
                 <div class="actions">
@@ -643,7 +660,8 @@ async function viewApplications(jobId) {
                     <button class="btn btn-danger" onclick="updateAppStatus(${app.id}, 'rejected')">Reject</button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
         
         content.innerHTML = '<h2>Applications</h2>' + appsHTML;
     } catch (error) {
@@ -720,9 +738,12 @@ async function showApplications() {
         for (const app of allApps) {
             const appHTML = document.createElement('div');
             appHTML.className = 'job-card';
+            const companyName = app.recruiter_company_name || 'Company not specified';
             appHTML.innerHTML = `
                 <h3>${app.first_name} ${app.last_name}</h3>
                 <p>Email: ${app.email}</p>
+                ${app.job_title ? `<p>Job: ${app.job_title}</p>` : ''}
+                <p>Company: <strong style="color: #0B3D91;">${companyName}</strong></p>
                 <p>Status: <strong>${app.status}</strong></p>
             `;
             content.appendChild(appHTML);
@@ -751,9 +772,29 @@ window.deleteJob = deleteJob;
 window.showApplications = showApplications;
 window.createJob = createJob;
 
-// Load candidate search by default
-window.addEventListener('DOMContentLoaded', () => {
+// Load candidate search by default and show welcome message
+window.addEventListener('DOMContentLoaded', async () => {
     if (getCurrentUserRole() === 'recruiter') {
+        // Load user info to display welcome message
+        try {
+            const userInfo = await apiClient.getCurrentUser();
+            const userNameEl = document.getElementById('user-name');
+            const companyNameSpan = document.getElementById('company-name-span');
+            
+            if (userNameEl && userInfo) {
+                const firstName = userInfo.first_name || '';
+                const lastName = userInfo.last_name || '';
+                const displayName = firstName || lastName ? `${firstName} ${lastName}`.trim() : userInfo.email.split('@')[0];
+                userNameEl.textContent = displayName;
+            }
+            
+            if (companyNameSpan && userInfo && userInfo.company_name) {
+                companyNameSpan.innerHTML = ` | <strong style="color: #0B3D91;">${userInfo.company_name}</strong>`;
+            }
+        } catch (error) {
+            console.warn('Could not load user info:', error);
+        }
+        
         showCandidateSearch();
     }
 });

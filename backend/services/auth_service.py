@@ -92,10 +92,10 @@ def register_user(user_data: UserCreate) -> dict:
         # Insert user
         cursor.execute(
             """
-            INSERT INTO users (email, password_hash, role)
-            VALUES (%s, %s, %s)
+            INSERT INTO users (email, password_hash, role, company_name)
+            VALUES (%s, %s, %s, %s)
             """,
-            (user_data.email, password_hash, user_data.role)
+            (user_data.email, password_hash, user_data.role, user_data.company_name)
         )
         
         user_id = cursor.lastrowid
@@ -115,7 +115,7 @@ def register_user(user_data: UserCreate) -> dict:
         # Fetch the complete user record to get created_at
         cursor.execute(
             """
-            SELECT id, email, role, created_at
+            SELECT id, email, role, company_name, created_at
             FROM users
             WHERE id = %s
             """,
@@ -187,11 +187,14 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
     cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     
     try:
+        # Get user info with profile
         cursor.execute(
             """
-            SELECT id, email, role, created_at
-            FROM users
-            WHERE id = %s
+            SELECT u.id, u.email, u.role, u.company_name, u.created_at,
+                   up.first_name, up.last_name
+            FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id
+            WHERE u.id = %s
             """,
             (user_id,)
         )

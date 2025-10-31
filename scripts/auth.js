@@ -39,6 +39,24 @@ function showHome() {
     registerSection.classList.add('hidden');
 }
 
+// Toggle company name field based on role selection
+const registerRoleSelect = document.getElementById('register-role');
+const companyNameGroup = document.getElementById('company-name-group');
+const companyNameInput = document.getElementById('register-company-name');
+
+if (registerRoleSelect && companyNameGroup && companyNameInput) {
+    registerRoleSelect.addEventListener('change', function() {
+        if (this.value === 'recruiter') {
+            companyNameGroup.style.display = 'block';
+            companyNameInput.setAttribute('required', 'required');
+        } else {
+            companyNameGroup.style.display = 'none';
+            companyNameInput.removeAttribute('required');
+            companyNameInput.value = '';
+        }
+    });
+}
+
 // Make functions globally available
 window.showLogin = showLogin;
 window.showRegister = showRegister;
@@ -98,11 +116,19 @@ if (registerForm) {
         }
         const phone = rawPhone ? countryCode + rawPhone : null;
         const location = document.getElementById('register-location')?.value;
+        const company_name = document.getElementById('register-company-name')?.value.trim();
+
+        // Validate company name for recruiters
+        if (role === 'recruiter' && (!company_name || company_name.length < 2)) {
+            alert('Please enter a valid company name (at least 2 characters).');
+            return;
+        }
 
         try {
             await apiClient.register({ 
                 email, password, role,
-                first_name, last_name, phone, location
+                first_name, last_name, phone, location,
+                company_name: role === 'recruiter' ? company_name : null
             });
             alert('Registration successful! Please login.');
             showLogin();

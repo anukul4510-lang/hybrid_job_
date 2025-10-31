@@ -144,9 +144,11 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
         params.append(limit)
         
         query_sql = f"""
-            SELECT * FROM job_postings
+            SELECT j.*, u.email as recruiter_email, u.company_name as recruiter_company_name
+            FROM job_postings j
+            LEFT JOIN users u ON j.recruiter_id = u.id
             {where_clause}
-            ORDER BY posted_date DESC
+            ORDER BY j.posted_date DESC
             LIMIT %s
         """
         
@@ -189,9 +191,11 @@ def sql_only_search(filters: Optional[Dict] = None, limit: int = 10) -> Dict:
     params.append(limit)
     
     query_sql = f"""
-        SELECT * FROM job_postings
+        SELECT j.*, u.email as recruiter_email, u.company_name as recruiter_company_name
+        FROM job_postings j
+        LEFT JOIN users u ON j.recruiter_id = u.id
         {where_clause}
-        ORDER BY posted_date DESC
+        ORDER BY j.posted_date DESC
         LIMIT %s
     """
     

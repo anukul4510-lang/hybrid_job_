@@ -6,6 +6,7 @@ Manages connection pool and provides database session.
 import mysql.connector
 from mysql.connector import pooling
 from typing import Generator
+import asyncio
 import config
 
 
@@ -52,7 +53,8 @@ async def init_mysql_db():
     """Initialize MySQL database and create tables if needed."""
     try:
         MySQLConnection.create_pool()
-        await create_tables()
+        # Run synchronous database operations in thread pool
+        await asyncio.to_thread(create_tables_sync)
         print("MySQL database initialized successfully")
     except Exception as e:
         print(f"Error initializing MySQL database: {e}")
@@ -169,8 +171,8 @@ def seed_default_skills(cursor, conn):
         conn.rollback()
 
 
-async def create_tables():
-    """Create database tables if they don't exist."""
+def create_tables_sync():
+    """Create database tables if they don't exist (synchronous version)."""
     conn = MySQLConnection.get_connection()
     cursor = conn.cursor(dictionary=True)
     
@@ -181,10 +183,21 @@ async def create_tables():
             email VARCHAR(255) UNIQUE NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
             role ENUM('jobseeker', 'recruiter', 'admin') NOT NULL DEFAULT 'jobseeker',
+            company_name VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     """)
+    
+    # Add company_name column if it doesn't exist (for backward compatibility)
+    try:
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'company_name'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN company_name VARCHAR(255)")
+            conn.commit()
+            print("Added company_name column to users table")
+    except mysql.connector.Error:
+        pass  # Column might already exist or table might not exist
     
     # User profiles table
     cursor.execute("""

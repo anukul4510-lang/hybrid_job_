@@ -319,7 +319,17 @@ function displayJobs(jobs) {
         return;
     }
     
-    jobsGrid.innerHTML = jobs.map(job => `
+    jobsGrid.innerHTML = jobs.map(job => {
+        const recruiterEmail = job.recruiter_email || '';
+        const companyName = job.recruiter_company_name || job.company || 'Company';
+        const jobTitle = job.title || 'Job Position';
+        
+        // Create mailto link with subject and body
+        const subject = encodeURIComponent(`Inquiry about ${jobTitle} position at ${companyName}`);
+        const body = encodeURIComponent(`Hello,\n\nI am interested in the ${jobTitle} position at ${companyName}. Please let me know if there are any questions about my application.\n\nThank you,\n[Your Name]`);
+        const gmailUrl = recruiterEmail ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recruiterEmail)}&su=${subject}&body=${body}` : '#';
+        
+        return `
         <div class="job-card">
             <h3>${job.title}</h3>
             <p class="company">${job.company}</p>
@@ -328,9 +338,13 @@ function displayJobs(jobs) {
             <div class="actions">
                 <button class="btn btn-primary" onclick="applyToJob(${job.id})">Apply</button>
                 <button class="btn btn-secondary" onclick="saveJob(${job.id})">Save</button>
+                ${recruiterEmail ? `<a href="${gmailUrl}" target="_blank" class="btn" style="background: #EA4335; color: white; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+                    ✉️ Contact via Gmail
+                </a>` : ''}
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 /**
@@ -375,14 +389,17 @@ async function showMyApplications() {
             return;
         }
         
-        const appsHTML = applications.map(app => `
+        const appsHTML = applications.map(app => {
+            const companyName = app.recruiter_company_name || app.company || 'Company not specified';
+            return `
             <div class="job-card">
                 <h3>${app.job_title}</h3>
-                <p class="company">${app.company}</p>
+                <p class="company">Company: <strong style="color: #0B3D91;">${companyName}</strong></p>
                 <p>Status: <strong>${app.status}</strong></p>
                 <p>Applied on: ${formatDate(app.applied_date)}</p>
             </div>
-        `).join('');
+        `;
+        }).join('');
         
         content.innerHTML = '<h2>My Applications</h2>' + appsHTML;
     } catch (error) {
@@ -408,15 +425,29 @@ async function showSavedJobs() {
             return;
         }
         
-        const jobsHTML = savedJobs.map(job => `
+        const jobsHTML = savedJobs.map(job => {
+            const recruiterEmail = job.recruiter_email || '';
+            const companyName = job.recruiter_company_name || job.company || 'Company';
+            const jobTitle = job.job_title || 'Job Position';
+            
+            // Create Gmail URL with pre-filled subject and body
+            const subject = encodeURIComponent(`Inquiry about ${jobTitle} position at ${companyName}`);
+            const body = encodeURIComponent(`Hello,\n\nI am interested in the ${jobTitle} position at ${companyName}. Please let me know if there are any questions about my application.\n\nThank you,\n[Your Name]`);
+            const gmailUrl = recruiterEmail ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recruiterEmail)}&su=${subject}&body=${body}` : '#';
+            
+            return `
             <div class="job-card">
                 <h3>${job.job_title}</h3>
                 <p class="company">${job.company}</p>
                 <div class="actions">
                     <button class="btn btn-primary" onclick="applyToJob(${job.job_id})">Apply Now</button>
+                    ${recruiterEmail ? `<a href="${gmailUrl}" target="_blank" class="btn" style="background: #EA4335; color: white; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+                        ✉️ Contact via Gmail
+                    </a>` : ''}
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
         
         content.innerHTML = '<h2>Saved Jobs</h2>' + jobsHTML;
     } catch (error) {
@@ -789,6 +820,14 @@ async function showRecommendations() {
                 <div class="actions">
                     <button class="btn btn-primary" onclick="applyToJob(${job.id})">Apply</button>
                     <button class="btn btn-secondary" onclick="saveJob(${job.id})">Save</button>
+                    ${job.recruiter_email ? (() => {
+                        const subject = encodeURIComponent(`Inquiry about ${job.title || 'Job'} position at ${job.recruiter_company_name || job.company || 'Company'}`);
+                        const body = encodeURIComponent(`Hello,\n\nI am interested in the ${job.title || 'Job'} position at ${job.recruiter_company_name || job.company || 'Company'}. Please let me know if there are any questions about my application.\n\nThank you,\n[Your Name]`);
+                        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(job.recruiter_email)}&su=${subject}&body=${body}`;
+                        return `<a href="${gmailUrl}" target="_blank" class="btn" style="background: #EA4335; color: white; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+                            ✉️ Contact via Gmail
+                        </a>`;
+                    })() : ''}
                 </div>
             </div>
         `).join('');
@@ -813,51 +852,247 @@ async function showResumes() {
         const resumes = await apiClient.getResumes();
         
         content.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h2>📄 My Resumes</h2>
-                <button class="btn btn-primary" onclick="showCreateResumeForm()">
-                    ➕ Create New Resume
-                </button>
+            <style>
+                .resumes-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 2px solid rgba(65, 105, 225, 0.2);
+                }
+                .resumes-title {
+                    font-size: 2rem;
+                    font-weight: 700;
+                    color: #0B3D91;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .resume-card {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    transition: all 0.3s ease;
+                    border-left: 4px solid #4169E1;
+                    position: relative;
+                }
+                .resume-card:hover {
+                    box-shadow: 0 6px 12px rgba(65, 105, 225, 0.2);
+                    transform: translateY(-2px);
+                }
+                .primary-badge {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+                    color: white;
+                    padding: 6px 14px;
+                    border-radius: 20px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+                }
+                .resume-title {
+                    font-size: 1.4rem;
+                    font-weight: 600;
+                    color: #0B3D91;
+                    margin-bottom: 12px;
+                    margin-right: 120px;
+                }
+                .resume-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    margin: 15px 0;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                }
+                .resume-meta-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    color: #666;
+                    font-size: 0.9rem;
+                }
+                .resume-preview {
+                    margin: 15px 0;
+                    padding: 15px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border-left: 3px solid #4169E1;
+                    max-height: 200px;
+                    overflow-y: auto;
+                }
+                .resume-preview strong {
+                    color: #0B3D91;
+                    display: block;
+                    margin-bottom: 8px;
+                }
+                .resume-actions {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-top: 20px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e0e0e0;
+                }
+                .empty-state {
+                    text-align: center;
+                    padding: 60px 30px;
+                    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+                    border-radius: 12px;
+                    border: 2px dashed #4169E1;
+                    margin-bottom: 30px;
+                }
+                .empty-state-icon {
+                    font-size: 4rem;
+                    margin-bottom: 20px;
+                }
+                .empty-state h3 {
+                    color: #0B3D91;
+                    font-size: 1.5rem;
+                    margin-bottom: 15px;
+                }
+                .empty-state p {
+                    color: #666;
+                    font-size: 1.1rem;
+                    margin-bottom: 25px;
+                    max-width: 500px;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+                .tips-card {
+                    background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin-top: 30px;
+                    border-left: 4px solid #FFC107;
+                }
+                .tips-card h3 {
+                    color: #856404;
+                    margin-bottom: 15px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .tips-card ul {
+                    line-height: 1.8;
+                    color: #856404;
+                    padding-left: 20px;
+                }
+                .tips-card li {
+                    margin-bottom: 8px;
+                }
+                .btn-add-resume {
+                    background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 6px rgba(65, 105, 225, 0.3);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .btn-add-resume:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(65, 105, 225, 0.4);
+                }
+                .btn-primary-action {
+                    background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+                    color: white;
+                    border: none;
+                    padding: 14px 28px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 1.05rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 8px rgba(65, 105, 225, 0.3);
+                }
+                .btn-primary-action:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 14px rgba(65, 105, 225, 0.4);
+                }
+            </style>
+            
+            <div class="resumes-header">
+                <div class="resumes-title">
+                    <span>📄</span>
+                    <span>My Resumes</span>
+                </div>
+                ${resumes.length > 0 ? `
+                    <button class="btn-add-resume" onclick="showCreateResumeForm()">
+                        ➕ Add Resume
+                    </button>
+                ` : ''}
             </div>
             
             ${resumes.length > 0 ? `
                 <div style="margin-bottom: 30px;">
-                    <h3>Your Resumes:</h3>
                     ${resumes.map(resume => `
-                        <div class="job-card" style="position: relative;">
-                            ${resume.is_primary ? '<span class="status-badge match-high" style="position: absolute; top: 15px; right: 15px;">Primary Resume</span>' : ''}
+                        <div class="resume-card">
+                            ${resume.is_primary ? '<span class="primary-badge">⭐ Primary Resume</span>' : ''}
                             
-                            <h3 style="margin-bottom: 15px;">${resume.title}</h3>
+                            <h3 class="resume-title">${resume.title}</h3>
+                            
+                            <div class="resume-meta">
+                                <div class="resume-meta-item">
+                                    <span>📅</span>
+                                    <span>Created: ${formatDate(resume.created_at)}</span>
+                                </div>
+                                ${resume.updated_at !== resume.created_at ? `
+                                    <div class="resume-meta-item">
+                                        <span>🔄</span>
+                                        <span>Updated: ${formatDate(resume.updated_at)}</span>
+                                    </div>
+                                ` : ''}
+                                ${resume.is_primary ? `
+                                    <div class="resume-meta-item">
+                                        <span>✅</span>
+                                        <span>Used for Applications</span>
+                                    </div>
+                                ` : ''}
+                            </div>
                             
                             ${resume.file_url ? `
-                                <p style="margin: 10px 0;">
-                                    <strong>📎 File:</strong> 
-                                    <a href="${resume.file_url}" target="_blank" style="color: #667eea;">View Resume</a>
-                                </p>
-                            ` : ''}
-                            
-                            ${resume.content ? `
-                                <div style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; max-height: 200px; overflow-y: auto;">
-                                    <strong>Content Preview:</strong>
-                                    <p style="white-space: pre-wrap; margin-top: 10px;">${resume.content.substring(0, 300)}${resume.content.length > 300 ? '...' : ''}</p>
+                                <div style="margin: 15px 0; padding: 12px; background: #e3f2fd; border-radius: 8px;">
+                                    <strong>📎 Resume File:</strong>
+                                    <a href="${resume.file_url}" target="_blank" style="color: #1976d2; text-decoration: none; margin-left: 8px; font-weight: 600;">
+                                        View File →
+                                    </a>
                                 </div>
                             ` : ''}
                             
-                            <p style="color: #666; font-size: 0.9rem; margin: 10px 0;">
-                                Created: ${formatDate(resume.created_at)}
-                                ${resume.updated_at !== resume.created_at ? ` • Updated: ${formatDate(resume.updated_at)}` : ''}
-                            </p>
+                            ${resume.content ? `
+                                <div class="resume-preview">
+                                    <strong>Content Preview</strong>
+                                    <p style="white-space: pre-wrap; margin-top: 8px; color: #555; line-height: 1.6;">
+                                        ${resume.content.substring(0, 300)}${resume.content.length > 300 ? '...' : ''}
+                                    </p>
+                                </div>
+                            ` : ''}
                             
-                            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                            <div class="resume-actions">
                                 ${!resume.is_primary ? `
-                                    <button class="btn btn-success" onclick="setPrimaryResume(${resume.id})">
+                                    <button class="btn btn-success" onclick="setPrimaryResume(${resume.id})" 
+                                            style="padding: 10px 20px; border-radius: 8px; font-weight: 600;">
                                         ⭐ Set as Primary
                                     </button>
                                 ` : ''}
-                                <button class="btn btn-secondary" onclick="editResume(${resume.id})">
+                                <button class="btn btn-secondary" onclick="editResume(${resume.id})"
+                                        style="padding: 10px 20px; border-radius: 8px; font-weight: 600;">
                                     ✏️ Edit
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteResume(${resume.id})">
+                                <button class="btn btn-danger" onclick="deleteResume(${resume.id})"
+                                        style="padding: 10px 20px; border-radius: 8px; font-weight: 600;">
                                     🗑️ Delete
                                 </button>
                             </div>
@@ -865,22 +1100,23 @@ async function showResumes() {
                     `).join('')}
                 </div>
             ` : `
-                <div class="card" style="text-align: center; padding: 40px; background: #f0f4ff;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
                     <h3>No Resumes Yet</h3>
-                    <p style="margin: 20px 0;">Create your first resume to get started with job applications!</p>
-                    <button class="btn btn-primary" onclick="showCreateResumeForm()">
-                        Create Your First Resume
+                    <p>Create your first resume to get started with job applications. You can upload a file, add a URL, or build one step by step!</p>
+                    <button class="btn-primary-action" onclick="showCreateResumeForm()">
+                        Get Started
                     </button>
                 </div>
             `}
             
-            <div class="card" style="margin-top: 30px; background: #fff8e1;">
+            <div class="tips-card">
                 <h3>💡 Resume Tips</h3>
-                <ul style="line-height: 1.8; color: #666;">
+                <ul>
                     <li><strong>Primary Resume:</strong> Your primary resume is automatically attached to job applications</li>
                     <li><strong>Multiple Resumes:</strong> Create different resumes for different types of jobs</li>
                     <li><strong>Keep Updated:</strong> Regularly update your resume with new skills and experiences</li>
-                    <li><strong>File Upload:</strong> You can upload existing resumes (PDF, DOCX) or create new ones</li>
+                    <li><strong>Flexible Options:</strong> Upload PDF files, add URLs, or build resumes with our step-by-step builder</li>
                 </ul>
             </div>
         `;
@@ -891,7 +1127,7 @@ async function showResumes() {
 }
 
 /**
- * Show create resume form
+ * Show create resume form with tabs for different options
  */
 function showCreateResumeForm() {
     const content = document.getElementById('content');
@@ -901,63 +1137,401 @@ function showCreateResumeForm() {
             ← Back to Resumes
         </button>
         
-        <div class="profile-form">
-            <div class="form-group full-width">
-                <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
-                <input type="text" id="resume-title" placeholder="e.g., Software Engineer Resume, Marketing Resume" required>
-                <small style="color: #666;">Give your resume a descriptive title</small>
-            </div>
-            
-            <div class="form-group full-width">
-                <label><strong>Option 1: Upload Existing Resume</strong></label>
-                <input type="url" id="resume-file-url" placeholder="Enter resume URL (e.g., Google Drive link, Dropbox link)">
-                <small style="color: #666;">Paste a link to your resume file (PDF, DOCX)</small>
-            </div>
-            
-            <div style="text-align: center; grid-column: 1 / -1; margin: 20px 0;">
-                <strong>- OR -</strong>
-            </div>
-            
-            <div class="form-group full-width">
-                <label><strong>Option 2: Create Resume Content</strong></label>
-                <textarea id="resume-content" rows="15" placeholder="Paste or type your resume content here...
-
-Example:
-JOHN DOE
-Email: john@example.com | Phone: (555) 123-4567
-
-PROFESSIONAL SUMMARY
-Experienced software engineer with 5+ years...
-
-SKILLS
-- Python, JavaScript, React
-- AWS, Docker, Kubernetes
-..."></textarea>
-                <small style="color: #666;">Type or paste your resume text content</small>
-            </div>
-            
-            <div class="form-group full-width">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="set-primary" style="width: auto;">
-                    <span>Set as primary resume (used for job applications)</span>
-                </label>
-            </div>
-            
-            <div class="form-group full-width">
-                <button class="btn btn-primary" onclick="createResume()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
-                    ✅ Create Resume
-                </button>
+        <!-- Tabs -->
+        <div style="margin-bottom: 30px;">
+            <button class="btn" id="tab-upload" onclick="switchResumeTab('upload')" 
+                    style="background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%); color: white;">
+                📎 Upload File
+            </button>
+            <button class="btn" id="tab-url" onclick="switchResumeTab('url')" 
+                    style="background: #f0f0f0; color: #333;">
+                🔗 Add URL
+            </button>
+            <button class="btn" id="tab-build" onclick="switchResumeTab('build')" 
+                    style="background: #f0f0f0; color: #333;">
+                ✏️ Build Resume
+            </button>
+        </div>
+        
+        <!-- Upload File Tab -->
+        <div id="resume-tab-upload" class="resume-tab-content" style="display: block;">
+            <div class="profile-form">
+                <div class="form-group full-width">
+                    <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
+                    <input type="text" id="upload-title" placeholder="e.g., Software Engineer Resume" required>
+                    <small style="color: #666;">Give your resume a descriptive title</small>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Upload Resume File:</strong> <span style="color: red;">*</span></label>
+                    <input type="file" id="resume-file" accept=".pdf,.doc,.docx" required>
+                    <small style="color: #666;">Upload PDF, DOC, or DOCX file (Max: 10MB)</small>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="upload-set-primary" style="width: auto;">
+                        <span>Set as primary resume</span>
+                    </label>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-primary" onclick="uploadResumeFile()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                        📤 Upload Resume
+                    </button>
+                </div>
             </div>
         </div>
         
-        <div class="card" style="margin-top: 30px; background: #e3f2fd;">
-            <h3>📝 Resume Creation Tips</h3>
-            <ul style="line-height: 1.8; color: #666;">
-                <li><strong>Upload URL:</strong> Use Google Drive, Dropbox, or any cloud storage. Make sure the link is publicly accessible.</li>
-                <li><strong>Text Content:</strong> Include your contact info, summary, experience, education, and skills.</li>
-                <li><strong>Multiple Formats:</strong> You can create both - one with a file link and one with text content.</li>
-                <li><strong>Update Later:</strong> You can always come back and edit your resume.</li>
-            </ul>
+        <!-- Add URL Tab -->
+        <div id="resume-tab-url" class="resume-tab-content" style="display: none;">
+            <div class="profile-form">
+                <div class="form-group full-width">
+                    <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
+                    <input type="text" id="url-title" placeholder="e.g., Software Engineer Resume" required>
+                    <small style="color: #666;">Give your resume a descriptive title</small>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Resume URL:</strong> <span style="color: red;">*</span></label>
+                    <input type="url" id="resume-url" placeholder="https://drive.google.com/file/..." required>
+                    <small style="color: #666;">Paste a link to your resume file (Google Drive, Dropbox, etc.)</small>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="url-set-primary" style="width: auto;">
+                        <span>Set as primary resume</span>
+                    </label>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-primary" onclick="addResumeByUrl()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                        ✅ Add Resume
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Build Resume Tab -->
+        <div id="resume-tab-build" class="resume-tab-content" style="display: none;">
+            <div class="profile-form">
+                <div class="form-group full-width">
+                    <label><strong>Resume Title:</strong> <span style="color: red;">*</span></label>
+                    <input type="text" id="build-title" placeholder="e.g., Software Engineer Resume" required>
+                    <small style="color: #666;">Give your resume a descriptive title</small>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Summary/Objective:</strong></label>
+                    <textarea id="build-summary" rows="3" placeholder="Brief professional summary or career objective..."></textarea>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-secondary" onclick="addWorkExperience()" style="width: 100%;">
+                        ➕ Add Work Experience
+                    </button>
+                    <div id="work-experiences-container" style="margin-top: 15px;"></div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-secondary" onclick="addEducation()" style="width: 100%;">
+                        ➕ Add Education
+                    </button>
+                    <div id="educations-container" style="margin-top: 15px;"></div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Certifications:</strong></label>
+                    <div id="certifications-container"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addCertification()" style="margin-top: 10px;">
+                        ➕ Add Certification
+                    </button>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Languages:</strong></label>
+                    <div id="languages-container"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addLanguage()" style="margin-top: 10px;">
+                        ➕ Add Language
+                    </button>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Projects:</strong></label>
+                    <button type="button" class="btn btn-secondary" onclick="addProject()" style="width: 100%; margin-bottom: 10px;">
+                        ➕ Add Project
+                    </button>
+                    <div id="projects-container"></div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Volunteer Experience:</strong></label>
+                    <button type="button" class="btn btn-secondary" onclick="addVolunteer()" style="width: 100%; margin-bottom: 10px;">
+                        ➕ Add Volunteer Experience
+                    </button>
+                    <div id="volunteers-container"></div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Publications:</strong></label>
+                    <button type="button" class="btn btn-secondary" onclick="addPublication()" style="width: 100%; margin-bottom: 10px;">
+                        ➕ Add Publication
+                    </button>
+                    <div id="publications-container"></div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Hobbies & Interests:</strong></label>
+                    <div id="hobbies-container"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addHobby()" style="margin-top: 10px;">
+                        ➕ Add Hobby
+                    </button>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label><strong>Professional Links:</strong></label>
+                    <input type="url" id="build-linkedin" placeholder="LinkedIn URL (optional)">
+                    <input type="url" id="build-github" placeholder="GitHub URL (optional)" style="margin-top: 10px;">
+                    <input type="url" id="build-portfolio" placeholder="Portfolio URL (optional)" style="margin-top: 10px;">
+                    <input type="url" id="build-twitter" placeholder="Twitter URL (optional)" style="margin-top: 10px;">
+                    <input type="url" id="build-stackoverflow" placeholder="Stack Overflow URL (optional)" style="margin-top: 10px;">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="build-set-primary" style="width: auto;">
+                        <span>Set as primary resume</span>
+                    </label>
+                </div>
+                
+                <div class="form-group full-width">
+                    <button class="btn btn-primary" onclick="buildResume()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                        ✅ Build Resume
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Store counters for dynamic fields
+    window.workExpCounter = 0;
+    window.eduCounter = 0;
+    window.certCounter = 0;
+    window.langCounter = 0;
+    window.projectCounter = 0;
+    window.volunteerCounter = 0;
+    window.publicationCounter = 0;
+    window.hobbyCounter = 0;
+}
+
+/**
+ * Switch between resume tabs
+ */
+function switchResumeTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.resume-tab-content').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Reset all tab buttons
+    document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.style.background = '#f0f0f0';
+        btn.style.color = '#333';
+    });
+    
+    // Show selected tab
+    document.getElementById(`resume-tab-${tabName}`).style.display = 'block';
+    document.getElementById(`tab-${tabName}`).style.background = 'linear-gradient(135deg, #4169E1 0%, #0B3D91 100%)';
+    document.getElementById(`tab-${tabName}`).style.color = 'white';
+}
+
+/**
+ * Add work experience field
+ */
+function addWorkExperience() {
+    const id = window.workExpCounter++;
+    const container = document.getElementById('work-experiences-container');
+    container.innerHTML += `
+        <div class="work-exp-item" data-id="${id}" style="border: 2px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong>Work Experience</strong>
+                <button type="button" class="btn btn-danger" onclick="removeWorkExp(${id})" style="padding: 5px 10px;">Remove</button>
+            </div>
+            <input type="text" id="we-company-${id}" placeholder="Company name" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="we-position-${id}" placeholder="Position/Title" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="we-start-${id}" placeholder="Start date (YYYY-MM)" required>
+                <input type="text" id="we-end-${id}" placeholder="End date (YYYY-MM or Present)">
+            </div>
+            <input type="text" id="we-location-${id}" placeholder="Location (optional)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <textarea id="we-description-${id}" placeholder="Job description (optional)" rows="2" style="width: 100%; padding: 8px;"></textarea>
+        </div>
+    `;
+}
+
+/**
+ * Remove work experience field
+ */
+function removeWorkExp(id) {
+    document.querySelector(`[data-id="${id}"]`).remove();
+}
+
+/**
+ * Add education field
+ */
+function addEducation() {
+    const id = window.eduCounter++;
+    const container = document.getElementById('educations-container');
+    container.innerHTML += `
+        <div class="edu-item" data-id="${id}" style="border: 2px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong>Education</strong>
+                <button type="button" class="btn btn-danger" onclick="removeEducation(${id})" style="padding: 5px 10px;">Remove</button>
+            </div>
+            <input type="text" id="edu-institution-${id}" placeholder="Institution name" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="edu-degree-${id}" placeholder="Degree" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="edu-field-${id}" placeholder="Field of study (optional)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="edu-start-${id}" placeholder="Start date (YYYY-MM)" required>
+                <input type="text" id="edu-end-${id}" placeholder="End date (YYYY-MM or Present)">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <input type="text" id="edu-location-${id}" placeholder="Location (optional)">
+                <input type="text" id="edu-gpa-${id}" placeholder="GPA (optional)">
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Remove education field
+ */
+function removeEducation(id) {
+    document.querySelector(`[data-id="${id}"]`).remove();
+}
+
+/**
+ * Add certification field
+ */
+function addCertification() {
+    const id = window.certCounter++;
+    const container = document.getElementById('certifications-container');
+    container.innerHTML += `
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="cert-${id}" placeholder="Certification name" style="flex: 1; padding: 8px;">
+            <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">Remove</button>
+        </div>
+    `;
+}
+
+/**
+ * Add language field
+ */
+function addLanguage() {
+    const id = window.langCounter++;
+    const container = document.getElementById('languages-container');
+    container.innerHTML += `
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="lang-${id}" placeholder="Language name" style="flex: 1; padding: 8px;">
+            <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">Remove</button>
+        </div>
+    `;
+}
+
+/**
+ * Add project field
+ */
+function addProject() {
+    const id = window.projectCounter++;
+    const container = document.getElementById('projects-container');
+    container.innerHTML += `
+        <div class="project-item" data-id="${id}" style="border: 2px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong>Project</strong>
+                <button type="button" class="btn btn-danger" onclick="removeProject(${id})" style="padding: 5px 10px;">Remove</button>
+            </div>
+            <input type="text" id="proj-name-${id}" placeholder="Project name" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <textarea id="proj-description-${id}" placeholder="Project description" rows="2" required style="width: 100%; padding: 8px; margin-bottom: 8px;"></textarea>
+            <input type="text" id="proj-technologies-${id}" placeholder="Technologies (e.g., React, Node.js, MongoDB)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="proj-start-${id}" placeholder="Start date (YYYY-MM)">
+                <input type="text" id="proj-end-${id}" placeholder="End date (YYYY-MM)">
+            </div>
+            <input type="url" id="proj-url-${id}" placeholder="Project URL (optional)" style="width: 100%; padding: 8px;">
+        </div>
+    `;
+}
+
+function removeProject(id) {
+    document.querySelector(`[data-id="${id}"]`).remove();
+}
+
+/**
+ * Add volunteer field
+ */
+function addVolunteer() {
+    const id = window.volunteerCounter++;
+    const container = document.getElementById('volunteers-container');
+    container.innerHTML += `
+        <div class="volunteer-item" data-id="${id}" style="border: 2px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong>Volunteer Experience</strong>
+                <button type="button" class="btn btn-danger" onclick="removeVolunteer(${id})" style="padding: 5px 10px;">Remove</button>
+            </div>
+            <input type="text" id="vol-role-${id}" placeholder="Role/Position" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="vol-organization-${id}" placeholder="Organization name" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="vol-start-${id}" placeholder="Start date (YYYY-MM)" required>
+                <input type="text" id="vol-end-${id}" placeholder="End date (YYYY-MM or Present)">
+            </div>
+            <input type="text" id="vol-location-${id}" placeholder="Location (optional)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <textarea id="vol-description-${id}" placeholder="Description (optional)" rows="2" style="width: 100%; padding: 8px;"></textarea>
+        </div>
+    `;
+}
+
+function removeVolunteer(id) {
+    document.querySelector(`[data-id="${id}"]`).remove();
+}
+
+/**
+ * Add publication field
+ */
+function addPublication() {
+    const id = window.publicationCounter++;
+    const container = document.getElementById('publications-container');
+    container.innerHTML += `
+        <div class="publication-item" data-id="${id}" style="border: 2px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong>Publication</strong>
+                <button type="button" class="btn btn-danger" onclick="removePublication(${id})" style="padding: 5px 10px;">Remove</button>
+            </div>
+            <input type="text" id="pub-title-${id}" placeholder="Publication title" required style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="pub-authors-${id}" placeholder="Authors (optional)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <input type="text" id="pub-journal-${id}" placeholder="Journal/Conference (optional)" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="pub-date-${id}" placeholder="Publication date">
+                <input type="url" id="pub-url-${id}" placeholder="URL (optional)">
+            </div>
+        </div>
+    `;
+}
+
+function removePublication(id) {
+    document.querySelector(`[data-id="${id}"]`).remove();
+}
+
+/**
+ * Add hobby field
+ */
+function addHobby() {
+    const id = window.hobbyCounter++;
+    const container = document.getElementById('hobbies-container');
+    container.innerHTML += `
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="hobby-${id}" placeholder="Hobby or interest" style="flex: 1; padding: 8px;">
+            <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">Remove</button>
         </div>
     `;
 }
@@ -1119,6 +1693,221 @@ async function deleteResume(resumeId) {
     }
 }
 
+/**
+ * Upload resume file
+ */
+async function uploadResumeFile() {
+    const title = document.getElementById('upload-title').value.trim();
+    const fileInput = document.getElementById('resume-file');
+    const file = fileInput.files[0];
+    const setPrimary = document.getElementById('upload-set-primary').checked;
+    
+    if (!title) {
+        showError('Please enter a resume title', document.getElementById('content'));
+        return;
+    }
+    
+    if (!file) {
+        showError('Please select a file to upload', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        const resume = await apiClient.uploadResumeFile(title, file);
+        
+        if (setPrimary && resume.id) {
+            await apiClient.setPrimaryResume(resume.id);
+        }
+        
+        showSuccess('Resume uploaded successfully!', document.getElementById('content'));
+        
+        setTimeout(() => {
+            showResumes();
+        }, 1500);
+    } catch (error) {
+        showError('Failed to upload resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Add resume by URL
+ */
+async function addResumeByUrl() {
+    const title = document.getElementById('url-title').value.trim();
+    const fileUrl = document.getElementById('resume-url').value.trim();
+    const setPrimary = document.getElementById('url-set-primary').checked;
+    
+    if (!title) {
+        showError('Please enter a resume title', document.getElementById('content'));
+        return;
+    }
+    
+    if (!fileUrl) {
+        showError('Please enter a resume URL', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        const resume = await apiClient.addResumeByUrl(title, fileUrl);
+        
+        if (setPrimary && resume.id) {
+            await apiClient.setPrimaryResume(resume.id);
+        }
+        
+        showSuccess('Resume added successfully!', document.getElementById('content'));
+        
+        setTimeout(() => {
+            showResumes();
+        }, 1500);
+    } catch (error) {
+        showError('Failed to add resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
+/**
+ * Build resume from structured data
+ */
+async function buildResume() {
+    const title = document.getElementById('build-title').value.trim();
+    const summary = document.getElementById('build-summary').value.trim();
+    const linkedinUrl = document.getElementById('build-linkedin').value.trim();
+    const githubUrl = document.getElementById('build-github').value.trim();
+    const portfolioUrl = document.getElementById('build-portfolio').value.trim();
+    const twitterUrl = document.getElementById('build-twitter').value.trim();
+    const stackoverflowUrl = document.getElementById('build-stackoverflow').value.trim();
+    const setPrimary = document.getElementById('build-set-primary').checked;
+    
+    if (!title) {
+        showError('Please enter a resume title', document.getElementById('content'));
+        return;
+    }
+    
+    // Collect work experiences
+    const workExperiences = [];
+    document.querySelectorAll('.work-exp-item').forEach(item => {
+        const id = item.dataset.id;
+        workExperiences.push({
+            company: document.getElementById(`we-company-${id}`).value.trim(),
+            position: document.getElementById(`we-position-${id}`).value.trim(),
+            start_date: document.getElementById(`we-start-${id}`).value.trim(),
+            end_date: document.getElementById(`we-end-${id}`).value.trim() || null,
+            location: document.getElementById(`we-location-${id}`).value.trim() || null,
+            description: document.getElementById(`we-description-${id}`).value.trim() || null
+        });
+    });
+    
+    // Collect educations
+    const educations = [];
+    document.querySelectorAll('.edu-item').forEach(item => {
+        const id = item.dataset.id;
+        educations.push({
+            institution: document.getElementById(`edu-institution-${id}`).value.trim(),
+            degree: document.getElementById(`edu-degree-${id}`).value.trim(),
+            field_of_study: document.getElementById(`edu-field-${id}`).value.trim() || null,
+            start_date: document.getElementById(`edu-start-${id}`).value.trim(),
+            end_date: document.getElementById(`edu-end-${id}`).value.trim() || null,
+            location: document.getElementById(`edu-location-${id}`).value.trim() || null,
+            gpa: document.getElementById(`edu-gpa-${id}`).value.trim() || null
+        });
+    });
+    
+    // Collect certifications
+    const certifications = [];
+    document.querySelectorAll('[id^="cert-"]').forEach(input => {
+        const value = input.value.trim();
+        if (value) certifications.push(value);
+    });
+    
+    // Collect languages
+    const languages = [];
+    document.querySelectorAll('[id^="lang-"]').forEach(input => {
+        const value = input.value.trim();
+        if (value) languages.push(value);
+    });
+    
+    // Collect projects
+    const projects = [];
+    document.querySelectorAll('.project-item').forEach(item => {
+        const id = item.dataset.id;
+        projects.push({
+            name: document.getElementById(`proj-name-${id}`).value.trim(),
+            description: document.getElementById(`proj-description-${id}`).value.trim(),
+            technologies: document.getElementById(`proj-technologies-${id}`).value.trim() || null,
+            start_date: document.getElementById(`proj-start-${id}`).value.trim() || null,
+            end_date: document.getElementById(`proj-end-${id}`).value.trim() || null,
+            url: document.getElementById(`proj-url-${id}`).value.trim() || null
+        });
+    });
+    
+    // Collect volunteer experiences
+    const volunteers = [];
+    document.querySelectorAll('.volunteer-item').forEach(item => {
+        const id = item.dataset.id;
+        volunteers.push({
+            organization: document.getElementById(`vol-organization-${id}`).value.trim(),
+            role: document.getElementById(`vol-role-${id}`).value.trim(),
+            description: document.getElementById(`vol-description-${id}`).value.trim() || null,
+            start_date: document.getElementById(`vol-start-${id}`).value.trim(),
+            end_date: document.getElementById(`vol-end-${id}`).value.trim() || null,
+            location: document.getElementById(`vol-location-${id}`).value.trim() || null
+        });
+    });
+    
+    // Collect publications
+    const publications = [];
+    document.querySelectorAll('.publication-item').forEach(item => {
+        const id = item.dataset.id;
+        publications.push({
+            title: document.getElementById(`pub-title-${id}`).value.trim(),
+            authors: document.getElementById(`pub-authors-${id}`).value.trim() || null,
+            journal: document.getElementById(`pub-journal-${id}`).value.trim() || null,
+            date: document.getElementById(`pub-date-${id}`).value.trim() || null,
+            url: document.getElementById(`pub-url-${id}`).value.trim() || null
+        });
+    });
+    
+    // Collect hobbies
+    const hobbies = [];
+    document.querySelectorAll('[id^="hobby-"]').forEach(input => {
+        const value = input.value.trim();
+        if (value) hobbies.push(value);
+    });
+    
+    const resumeData = {
+        title,
+        summary: summary || null,
+        work_experience: workExperiences,
+        education: educations,
+        certifications,
+        languages,
+        projects,
+        volunteer_experience: volunteers,
+        publications,
+        hobbies,
+        linkedin_url: linkedinUrl || null,
+        github_url: githubUrl || null,
+        portfolio_url: portfolioUrl || null,
+        twitter_url: twitterUrl || null,
+        stackoverflow_url: stackoverflowUrl || null
+    };
+    
+    try {
+        const resume = await apiClient.buildResume(resumeData);
+        
+        if (setPrimary && resume.id) {
+            await apiClient.setPrimaryResume(resume.id);
+        }
+        
+        showSuccess('Resume built successfully!', document.getElementById('content'));
+        
+        setTimeout(() => {
+            showResumes();
+        }, 1500);
+    } catch (error) {
+        showError('Failed to build resume: ' + error.message, document.getElementById('content'));
+    }
+}
+
 // Make functions globally available
 window.showHome = showHome;
 window.showProfile = showProfile;
@@ -1139,18 +1928,50 @@ window.addSkillByName = addSkillByName;
 window.searchSkills = searchSkills;
 window.showResumes = showResumes;
 window.showCreateResumeForm = showCreateResumeForm;
+window.switchResumeTab = switchResumeTab;
+window.uploadResumeFile = uploadResumeFile;
+window.addResumeByUrl = addResumeByUrl;
+window.buildResume = buildResume;
+window.addWorkExperience = addWorkExperience;
+window.removeWorkExp = removeWorkExp;
+window.addEducation = addEducation;
+window.removeEducation = removeEducation;
+window.addCertification = addCertification;
+window.addLanguage = addLanguage;
+window.addProject = addProject;
+window.removeProject = removeProject;
+window.addVolunteer = addVolunteer;
+window.removeVolunteer = removeVolunteer;
+window.addPublication = addPublication;
+window.removePublication = removePublication;
+window.addHobby = addHobby;
 window.createResume = createResume;
 window.editResume = editResume;
 window.updateResume = updateResume;
 window.setPrimaryResume = setPrimaryResume;
 window.deleteResume = deleteResume;
 
-// Show home screen on page load
-window.addEventListener('DOMContentLoaded', () => {
+// Show home screen on page load and update welcome message
+window.addEventListener('DOMContentLoaded', async () => {
     // Only show home if we're on the dashboard page
     // Authentication is handled by auth.js and api-client.js
     const currentPath = window.location.pathname;
     if (currentPath.includes('jobseeker-dashboard')) {
+        // Load user info to display welcome message with first name
+        try {
+            const userInfo = await apiClient.getCurrentUser();
+            const userNameEl = document.getElementById('user-name');
+            
+            if (userNameEl && userInfo) {
+                // Try to get first name from profile, fallback to email username
+                const firstName = userInfo.first_name || '';
+                const displayName = firstName || (userInfo.email ? userInfo.email.split('@')[0] : 'User');
+                userNameEl.textContent = displayName;
+            }
+        } catch (error) {
+            console.warn('Could not load user info for welcome message:', error);
+        }
+        
         showHome();
     }
 });

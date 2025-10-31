@@ -111,6 +111,15 @@ async def get_job_applications(
     
     conn = MySQLConnection.get_connection()
     cursor = conn.cursor(dictionary=True)
+    
+    # Get recruiter's company name
+    cursor.execute(
+        "SELECT company_name FROM users WHERE id = %s",
+        (current_user.user_id,)
+    )
+    recruiter_data = cursor.fetchone()
+    recruiter_company_name = recruiter_data.get('company_name') if recruiter_data else None
+    
     cursor.execute(
         """
         SELECT a.*, u.email, up.first_name, up.last_name
@@ -123,6 +132,11 @@ async def get_job_applications(
         (job_id,)
     )
     applications = cursor.fetchall()
+    
+    # Add company name to each application
+    for app in applications:
+        app['recruiter_company_name'] = recruiter_company_name
+    
     cursor.close()
     conn.close()
     return applications

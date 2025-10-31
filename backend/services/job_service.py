@@ -75,21 +75,27 @@ def get_all_job_postings(filters: Optional[Dict] = None, limit: int = 50) -> Lis
     cursor = conn.cursor(dictionary=True)
     
     try:
-        query = "SELECT * FROM job_postings WHERE status = 'active'"
+        # Include recruiter email for contact option
+        query = """
+            SELECT j.*, u.email as recruiter_email, u.company_name as recruiter_company_name
+            FROM job_postings j
+            LEFT JOIN users u ON j.recruiter_id = u.id
+            WHERE j.status = 'active'
+        """
         params = []
         
         if filters:
             if "location" in filters:
-                query += " AND location LIKE %s"
+                query += " AND j.location LIKE %s"
                 params.append(f"%{filters['location']}%")
             if "employment_type" in filters:
-                query += " AND employment_type = %s"
+                query += " AND j.employment_type = %s"
                 params.append(filters['employment_type'])
             if "company" in filters:
-                query += " AND company LIKE %s"
+                query += " AND j.company LIKE %s"
                 params.append(f"%{filters['company']}%")
         
-        query += " ORDER BY posted_date DESC LIMIT %s"
+        query += " ORDER BY j.posted_date DESC LIMIT %s"
         params.append(limit)
         
         cursor.execute(query, tuple(params))
@@ -239,9 +245,11 @@ def get_user_applications(user_id: int) -> List[dict]:
     try:
         cursor.execute(
             """
-            SELECT a.*, j.title as job_title, j.company
+            SELECT a.*, j.title as job_title, j.company, j.recruiter_id,
+                   u.company_name as recruiter_company_name
             FROM applications a
             JOIN job_postings j ON a.job_id = j.id
+            LEFT JOIN users u ON j.recruiter_id = u.id
             WHERE a.jobseeker_id = %s
             ORDER BY a.applied_date DESC
             """,
@@ -294,9 +302,10 @@ def get_saved_jobs(jobseeker_id: int) -> List[dict]:
     try:
         cursor.execute(
             """
-            SELECT sj.*, j.title as job_title, j.company
+            SELECT sj.*, j.title as job_title, j.company, u.email as recruiter_email, u.company_name as recruiter_company_name
             FROM saved_jobs sj
             JOIN job_postings j ON sj.job_id = j.id
+            LEFT JOIN users u ON j.recruiter_id = u.id
             WHERE sj.jobseeker_id = %s
             ORDER BY sj.saved_date DESC
             """,

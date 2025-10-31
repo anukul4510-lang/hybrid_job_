@@ -85,6 +85,11 @@
                         <label for="register-location">Location:</label>
                         <input type="text" id="register-location" placeholder="City, State">
                     </div>
+                    <div class="form-group" id="company-name-group" style="display: none;">
+                        <label for="register-company-name">Company Name: <span class="required-star">*</span></label>
+                        <input type="text" id="register-company-name" placeholder="Enter your company name">
+                        <small style="color: #666; display: block; margin-top: 5px;">Required for recruiters</small>
+                    </div>
                     <button type="submit" class="btn btn-primary">Register</button>
                 </form>
                 <p class="switch-auth">
@@ -95,20 +100,55 @@
             <!-- Home/Welcome Section -->
             <section id="home-section" class="welcome-section">
                 <div class="hero">
-                    <h2>Find Your Dream Job with AI-Powered Matching</h2>
-                    <p>The most advanced job platform that combines traditional search with AI-powered recommendations</p>
+                    <div class="hero-badge">✨ AI-Powered Platform</div>
+                    <h2 class="hero-title">
+                        <span class="gradient-text">Find Your Dream Job</span>
+                        <br>with Intelligent Matching
+                    </h2>
+                    <p class="hero-description">The most advanced job platform that combines traditional search with cutting-edge AI-powered recommendations. Connect with opportunities that match your skills and aspirations.</p>
+                    
+                    <div class="hero-actions">
+                        <button onclick="showLogin()" class="btn btn-primary btn-hero">
+                            <span>🚀 Login</span>
+                        </button>
+                        <button onclick="showRegister()" class="btn btn-secondary btn-hero">
+                            <span>✨ Get Started</span>
+                        </button>
+                    </div>
+                    
                     <div class="features">
                         <div class="feature-card">
-                            <h3>🔍 Hybrid Search</h3>
-                            <p>Search using natural language with AI-powered semantic matching</p>
+                            <div class="feature-icon">🔍</div>
+                            <h3>Hybrid Search</h3>
+                            <p>Search using natural language with AI-powered semantic matching. Find exactly what you're looking for.</p>
+                            <div class="feature-glow"></div>
                         </div>
                         <div class="feature-card">
-                            <h3>🎯 Smart Recommendations</h3>
-                            <p>Get personalized job recommendations based on your skills</p>
+                            <div class="feature-icon">🎯</div>
+                            <h3>Smart Recommendations</h3>
+                            <p>Get personalized job recommendations based on your skills, experience, and career goals.</p>
+                            <div class="feature-glow"></div>
                         </div>
                         <div class="feature-card">
-                            <h3>⚡ Fast Matching</h3>
-                            <p>Vector search technology for instant relevant results</p>
+                            <div class="feature-icon">⚡</div>
+                            <h3>Fast Matching</h3>
+                            <p>Vector search technology for instant relevant results. Get matched in seconds, not minutes.</p>
+                            <div class="feature-glow"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <div class="stat-item">
+                            <div class="stat-number">10K+</div>
+                            <div class="stat-label">Job Seekers</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">5K+</div>
+                            <div class="stat-label">Jobs Available</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">95%</div>
+                            <div class="stat-label">Match Accuracy</div>
                         </div>
                     </div>
                 </div>

@@ -3,11 +3,16 @@ Job seeker API routes.
 Handles profile management, job browsing, and applications.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
 from typing import List
+import os
+import shutil
+import uuid
+from pathlib import Path
 from backend.models.user_models import (
     UserProfileCreate, UserProfileUpdate,
-    UserSkillCreate, SkillCreate
+    UserSkillCreate, SkillCreate, ResumeAddByUrl,
+    ResumeBuildRequest
 )
 from backend.models.job_models import ApplicationCreate, SavedJobCreate
 from backend.services.user_service import (
@@ -17,7 +22,7 @@ from backend.services.user_service import (
 )
 from backend.services.resume_service import (
     create_resume, get_user_resumes, get_resume, update_resume,
-    delete_resume, set_primary_resume
+    delete_resume, set_primary_resume, build_resume_from_structured_data
 )
 from backend.services.job_service import (
     get_all_job_postings, create_application, get_user_applications,
@@ -177,16 +182,81 @@ async def create_new_skill(
 
 
 # Resume endpoints
-@router.post("/resumes")
-async def create_resume_endpoint(
-    title: str,
-    content: str = None,
-    file_url: str = None,
+# Create uploads directory if it doesn't exist
+UPLOADS_DIR = Path("uploads/resumes")
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/resumes/upload-file")
+async def upload_resume_file(
+    title: str = Form(...),
+    file: UploadFile = File(...),
     current_user: TokenData = Depends(get_current_user)
 ):
-    """Create a new resume."""
+    """
+    Upload a PDF/resume file. Accepts PDF, DOC, DOCX files.
+    Saves the file and stores the path in the database.
+    """
+    # Validate file type
+    allowed_extensions = {'.pdf', '.doc', '.docx'}
+    file_ext = Path(file.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+    
     try:
-        return create_resume(current_user.user_id, title, content, file_url)
+        # Create user-specific directory
+        user_dir = UPLOADS_DIR / str(current_user.user_id)
+        user_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = user_dir / unique_filename
+        
+        # Save file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Get relative path for database
+        relative_path = f"uploads/resumes/{current_user.user_id}/{unique_filename}"
+        
+        # Save resume record
+        return create_resume(current_user.user_id, title, None, relative_path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File upload error: {str(e)}")
+
+
+@router.post("/resumes/add-url")
+async def add_resume_url(
+    resume_data: ResumeAddByUrl,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Add an existing resume by providing a URL.
+    Useful for resumes hosted on external services (Dropbox, Google Drive, etc.).
+    """
+    try:
+        return create_resume(current_user.user_id, resume_data.title, None, resume_data.file_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/resumes/build")
+async def build_resume_endpoint(
+    resume_data: ResumeBuildRequest,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Build a new resume from structured user input.
+    Takes all necessary details in different fields and creates a formatted resume.
+    """
+    try:
+        return build_resume_from_structured_data(current_user.user_id, resume_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

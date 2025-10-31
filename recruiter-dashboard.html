@@ -13,52 +13,62 @@
             margin-top: 20px;
         }
         .sidebar {
-            background: #764ba2;
+            background: linear-gradient(135deg, #0B3D91 0%, #4169E1 100%);
             color: white;
             padding: 20px;
             border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(11, 61, 145, 0.3);
         }
         .sidebar button {
             display: block;
             width: 100%;
             padding: 12px;
             margin-bottom: 10px;
-            background: white;
-            color: #764ba2;
+            background: #F8F8FF;
+            color: #0B3D91;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            transition: all 0.3s ease;
         }
         .sidebar button:hover {
-            background: #667eea;
-            color: white;
+            background: #4169E1;
+            color: #F8F8FF;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
         .content-area {
-            background: white;
+            background: #F8F8FF;
             padding: 30px;
             border-radius: 12px;
+            border: 1px solid rgba(192, 192, 192, 0.3);
         }
         .highlight-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%) !important;
+            color: #F8F8FF !important;
             font-weight: 700 !important;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+            border: 2px solid rgba(212, 175, 55, 0.3) !important;
         }
         .highlight-btn:hover {
             transform: scale(1.05);
+            background: linear-gradient(135deg, #4169E1 0%, #0B3D91 50%, #D4AF37 100%) !important;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
         }
         .candidate-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
+            background: #F8F8FF;
+            border: 2px solid rgba(192, 192, 192, 0.3);
+            border-radius: 16px;
+            padding: 25px;
             margin-bottom: 20px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(65, 105, 225, 0.1);
         }
         .candidate-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            border-color: #D4AF37;
+            box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
+            transform: translateY(-2px);
         }
         .match-score {
             display: inline-block;
@@ -71,25 +81,76 @@
         .match-medium { background: #ff9800; color: white; }
         .match-low { background: #f44336; color: white; }
         .search-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #F8F8FF 0%, #ffffff 100%);
+            padding: 35px;
+            border-radius: 20px;
             margin-bottom: 30px;
-            color: white;
+            border: 2px solid rgba(192, 192, 192, 0.3);
+            box-shadow: 0 8px 30px rgba(11, 61, 145, 0.15);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .search-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0B3D91 0%, #4169E1 50%, #D4AF37 100%);
+        }
+        
+        .search-container h2 {
+            color: #0B3D91 !important;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .search-container p {
+            color: #666 !important;
+            opacity: 1 !important;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
         .search-input {
             width: 100%;
-            padding: 15px;
+            padding: 16px 20px;
             font-size: 1.1rem;
-            border: none;
-            border-radius: 8px;
+            border: 2px solid rgba(192, 192, 192, 0.4);
+            border-radius: 12px;
             margin-bottom: 15px;
+            background: #ffffff;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #4169E1;
+            box-shadow: 0 0 0 4px rgba(65, 105, 225, 0.1), 0 4px 12px rgba(212, 175, 55, 0.15);
         }
         .filter-group {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            border: 2px solid rgba(192, 192, 192, 0.4) !important;
+            background: #ffffff !important;
+            color: #333 !important;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4169E1 !important;
+            box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1) !important;
         }
         .status-badge {
             display: inline-block;
@@ -109,7 +170,7 @@
     <div class="container">
         <header>
             <h1>Recruiter Dashboard</h1>
-            <p>Manage your job postings and applications</p>
+            <p>Welcome, <span id="user-name">User</span><span id="company-name-span"></span></p>
         </header>
 
         <nav>

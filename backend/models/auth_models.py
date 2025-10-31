@@ -16,6 +16,7 @@ class UserCreate(BaseModel):
     last_name: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+    company_name: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -42,6 +43,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     role: str
+    company_name: Optional[str] = None
     created_at: datetime
     
     class Config:
