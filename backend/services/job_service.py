@@ -227,10 +227,11 @@ def create_application(jobseeker_id: int, application_data: ApplicationCreate) -
             (application_id,)
         )
         return cursor.fetchone()
-    except mysql.connector.IntegrityError:
-        raise ValueError("You have already applied for this job")
     except mysql.connector.Error as e:
         conn.rollback()
+        # Check if it's a duplicate key error (integrity error)
+        if e.errno == 1062:  # ER_DUP_ENTRY
+            raise ValueError("You have already applied for this job")
         raise ValueError(f"Database error: {e}")
     finally:
         cursor.close()
@@ -284,10 +285,11 @@ def save_job(jobseeker_id: int, job_id: int) -> dict:
             (saved_id,)
         )
         return cursor.fetchone()
-    except mysql.connector.IntegrityError:
-        raise ValueError("Job already saved")
     except mysql.connector.Error as e:
         conn.rollback()
+        # Check if it's a duplicate key error (integrity error)
+        if e.errno == 1062:  # ER_DUP_ENTRY
+            raise ValueError("Job already saved")
         raise ValueError(f"Database error: {e}")
     finally:
         cursor.close()

@@ -3,6 +3,9 @@ Seed script to populate initial skills in the database.
 Run this after database initialization to add common skills.
 """
 
+import sys
+import os
+
 from backend.database.mysql_connection import MySQLConnection
 
 # Common skills across different industries
@@ -68,7 +71,7 @@ def seed_skills():
                 (skill_name,)
             )
             added += 1
-            print(f"✓ Added: {skill_name}")
+            print(f"[OK] Added: {skill_name}")
         except Exception as e:
             # Skill already exists
             skipped += 1
@@ -93,10 +96,10 @@ if __name__ == "__main__":
     
     try:
         seed_skills()
-        print("\n✅ Success! Skills have been seeded.")
+        print("\n[SUCCESS] Success! Skills have been seeded.")
         print("Users can now search and add these skills to their profiles.")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] Error: {e}")
         print("Make sure the database is running and tables are created.")
         print("Run 'python run.py' first to initialize the database.")
 

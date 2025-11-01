@@ -3,10 +3,17 @@ Hybrid search service using SQL filters and ChromaDB vector search.
 Integrates Gemini API for embedding generation.
 """
 
-import google.generativeai as genai
+import os
+import warnings
 from typing import List, Dict, Optional
 import time
 import config
+
+# Suppress warnings from gRPC/ALTS before importing Google AI
+warnings.filterwarnings('ignore', category=UserWarning)
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+
+import google.generativeai as genai
 from backend.database.mysql_connection import MySQLConnection
 from backend.database.chroma_connection import ChromaConnection
 import mysql.connector
@@ -95,13 +102,17 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
         limit: Maximum number of results
         
     Returns:
-        Search results with scores
+        Search results with scores and search breakdown
     """
     start_time = time.time()
+    
+    # Debug: Print at start
+    print(f"DEBUG: hybrid_search called with query='{query}', filters={filters}, limit={limit}")
     
     try:
         # Generate embedding for query
         query_embedding = generate_embedding(query)
+        print(f"DEBUG: Embedding generated successfully")
         
         # Perform vector search in ChromaDB
         vector_results = ChromaConnection.search_jobs(
@@ -110,11 +121,24 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
             filters=None
         )
         
-        # Extract job IDs from vector results
+        # Extract job IDs and scores from vector results
         job_ids = []
+        vector_scores = {}
+        vector_ids = []
+        
         if vector_results and 'ids' in vector_results and len(vector_results['ids']) > 0:
-            for job_id_str in vector_results['ids'][0]:
-                job_ids.append(int(job_id_str.replace('job_', '')))
+            if 'distances' in vector_results and len(vector_results['distances']) > 0:
+                for idx, job_id_str in enumerate(vector_results['ids'][0]):
+                    job_id = int(job_id_str.replace('job_', ''))
+                    job_ids.append(job_id)
+                    vector_ids.append(job_id)
+                    if idx < len(vector_results['distances'][0]):
+                        # Convert distance to similarity score (higher is better)
+                        distance = vector_results['distances'][0][idx]
+                        similarity = max(0, 100 * (1 - distance))
+                        vector_scores[job_id] = round(similarity, 2)
+        
+        vector_count = len(vector_ids)
         
         # Apply SQL filters
         conn = MySQLConnection.get_connection()
@@ -123,23 +147,29 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
         where_clause = "WHERE status = 'active'"
         params = []
         
+        sql_filter_applied = ""
         if job_ids:
             where_clause += f" AND id IN ({','.join(['%s']*len(job_ids))})"
             params.extend(job_ids)
+            sql_filter_applied += f"[Vector IDs filtered: {len(job_ids)}] "
         
         if filters:
             if "location" in filters:
                 where_clause += " AND location LIKE %s"
                 params.append(f"%{filters['location']}%")
+                sql_filter_applied += f"Location: {filters['location']} "
             if "employment_type" in filters:
                 where_clause += " AND employment_type = %s"
                 params.append(filters['employment_type'])
+                sql_filter_applied += f"Type: {filters['employment_type']} "
             if "min_salary" in filters:
                 where_clause += " AND (max_salary >= %s OR min_salary >= %s)"
                 params.extend([filters['min_salary'], filters['min_salary']])
+                sql_filter_applied += f"Min Salary: ${filters['min_salary']:,} "
             if "max_salary" in filters:
                 where_clause += " AND (min_salary <= %s OR max_salary <= %s)"
                 params.extend([filters['max_salary'], filters['max_salary']])
+                sql_filter_applied += f"Max Salary: ${filters['max_salary']:,} "
         
         params.append(limit)
         
@@ -160,10 +190,48 @@ def hybrid_search(query: str, filters: Optional[Dict] = None, limit: int = 10) -
         
         execution_time = time.time() - start_time
         
+        # Add similarity scores to results
+        for result in results:
+            if result['id'] in vector_scores:
+                result['similarity_score'] = vector_scores[result['id']]
+            else:
+                result['similarity_score'] = 0
+        
+        # Print search breakdown
+        print(f"\n{'='*80}")
+        print(f"[SEARCH] HYBRID SEARCH BREAKDOWN")
+        print(f"{'='*80}")
+        print(f"Query: '{query}'")
+        print(f"{'-'*80}")
+        print(f"[INFO] Vector Search Results:")
+        print(f"   * Vector matches found: {vector_count}")
+        if vector_ids:
+            print(f"   * Job IDs from vector: {vector_ids[:10]}{'...' if len(vector_ids) > 10 else ''}")
+        print(f"{'-'*80}")
+        print(f"[INFO] SQL Filter Applied:")
+        if sql_filter_applied:
+            print(f"   * {sql_filter_applied.strip()}")
+        else:
+            print(f"   * No additional filters")
+        print(f"   * SQL clause: {where_clause}")
+        print(f"{'-'*80}")
+        print(f"[RESULT] Final Results:")
+        print(f"   * Total jobs returned: {len(results)}")
+        print(f"   * Execution time: {execution_time:.3f}s")
+        if results:
+            print(f"   * Jobs: {[r['title'][:30] for r in results[:5]]}")
+        print(f"{'='*80}\n")
+        
         return {
             "results": results,
             "total_results": len(results),
-            "execution_time": execution_time
+            "execution_time": execution_time,
+            "search_breakdown": {
+                "vector_matches": vector_count,
+                "sql_filtered": len(results),
+                "vector_job_ids": vector_ids,
+                "filters_applied": filters or {}
+            }
         }
         
     except Exception as e:

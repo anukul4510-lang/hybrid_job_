@@ -3,6 +3,13 @@ Run script for the Hybrid Job Application System.
 Starts the FastAPI server with Uvicorn.
 """
 
+import os
+import warnings
+
+# Suppress warnings from gRPC/ALTS before importing uvicorn
+warnings.filterwarnings('ignore', category=UserWarning)
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+
 import uvicorn
 
 if __name__ == "__main__":

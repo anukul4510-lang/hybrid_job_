@@ -95,6 +95,10 @@ def get_system_statistics() -> Dict:
         cursor.execute("SELECT status, COUNT(*) as count FROM job_postings GROUP BY status")
         stats['jobs_by_status'] = cursor.fetchall()
         
+        # Count only active job postings
+        cursor.execute("SELECT COUNT(*) as total FROM job_postings WHERE status = 'active'")
+        stats['active_jobs'] = cursor.fetchone()['total']
+        
         # Application statistics
         cursor.execute("SELECT COUNT(*) as total FROM applications")
         stats['total_applications'] = cursor.fetchone()['total']

@@ -25,13 +25,13 @@ def create_database():
         # Create database
         database_name = os.getenv('MYSQL_DATABASE', 'hybrid_job_system')
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-        print(f"✓ Database '{database_name}' created successfully!")
+        print(f"[OK] Database '{database_name}' created successfully!")
         
         cursor.close()
         connection.close()
         
     except mysql.connector.Error as e:
-        print(f"✗ Error creating database: {e}")
+        print(f"[FAIL] Error creating database: {e}")
         raise
 
 if __name__ == "__main__":

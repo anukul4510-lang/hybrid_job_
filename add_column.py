@@ -36,9 +36,9 @@ def add_missing_columns():
                     ADD COLUMN {column_name} {column_definition}
                 """)
                 conn.commit()
-                print(f"✓ {column_name} column added successfully")
+                print(f"[OK] {column_name} column added successfully")
             else:
-                print(f"✓ {column_name} column already exists")
+                print(f"[OK] {column_name} column already exists")
             
     except mysql.connector.Error as e:
         print(f"Error: {e}")

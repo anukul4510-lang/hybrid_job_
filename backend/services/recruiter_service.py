@@ -2,11 +2,18 @@
 Recruiter-specific services including advanced user search.
 """
 
-import google.generativeai as genai
+import os
+import warnings
 from typing import List, Dict, Optional
 import time
 import config
 import difflib
+
+# Suppress warnings from gRPC/ALTS before importing Google AI
+warnings.filterwarnings('ignore', category=UserWarning)
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+
+import google.generativeai as genai
 from backend.database.mysql_connection import MySQLConnection
 from backend.database.chroma_connection import ChromaConnection
 
@@ -478,6 +485,30 @@ def generate_user_embedding(user_profile: Dict) -> List[float]:
         return [0.0] * 768
 
 
+def calculate_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    Calculate cosine similarity between two vectors.
+    
+    Args:
+        vec1: First vector
+        vec2: Second vector
+        
+    Returns:
+        Similarity score (0-1)
+    """
+    if len(vec1) != len(vec2):
+        return 0.0
+    
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    magnitude1 = sum(a * a for a in vec1) ** 0.5
+    magnitude2 = sum(b * b for b in vec2) ** 0.5
+    
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+    
+    return dot_product / (magnitude1 * magnitude2)
+
+
 def calculate_match_score(candidate: Dict, query_filters: Dict) -> float:
     """
     Calculate match percentage for a candidate based on query filters.
@@ -622,6 +653,14 @@ def advanced_user_search(query: str, filters: Optional[Dict] = None, limit: int 
     """
     start_time = time.time()
     
+    print(f"\n{'='*80}")
+    print(f"[INIT] CANDIDATE SEARCH INITIATED")
+    print(f"{'='*80}")
+    print(f"Query: '{query}'")
+    print(f"Additional filters: {filters or 'None'}")
+    print(f"Limit: {limit}")
+    print(f"{'-'*80}")
+    
     try:
         # Correct spelling in query before parsing
         corrected_query = correct_spelling_in_query(query)
@@ -724,7 +763,42 @@ def advanced_user_search(query: str, filters: Optional[Dict] = None, limit: int 
         cursor.execute(query_sql, tuple(params))
         results = cursor.fetchall()
         
-        print(f"[DEBUG] Initial results: {len(results)} candidates found")
+        print(f"[DEBUG] Initial SQL results: {len(results)} candidates found")
+        
+        # Now perform vector search on the results to improve ranking
+        vector_search_results = []
+        if results:
+            try:
+                # Generate query embedding
+                query_text = f"{query} {ai_filters.get('job_of_choice', '')} {' '.join(ai_filters.get('skills', []))}"
+                query_embedding = genai.GenerativeModel('models/embedding-001').generate_embeddings([query_text])['embeddings'][0]['values']
+                
+                print(f"[DEBUG] Query embedding generated for vector search")
+                
+                # Create embeddings for candidate profiles and calculate similarity
+                candidate_scores = []
+                for candidate in results:
+                    candidate_text = f"{candidate.get('job_of_choice', '')} {candidate.get('skills', '')} {candidate.get('bio', '')}"
+                    candidate_embedding = genai.GenerativeModel('models/embedding-001').generate_embeddings([candidate_text])['embeddings'][0]['values']
+                    
+                    # Calculate cosine similarity
+                    similarity = calculate_cosine_similarity(query_embedding, candidate_embedding)
+                    candidate_scores.append((candidate, similarity))
+                    vector_search_results.append({
+                        'candidate': candidate,
+                        'vector_similarity': similarity
+                    })
+                
+                print(f"[DEBUG] Vector search completed on {len(results)} candidates")
+                if vector_search_results:
+                    print(f"[DEBUG] Top vector similarities:")
+                    for i, item in enumerate(vector_search_results[:5], 1):
+                        name = item['candidate'].get('first_name', 'Unknown')
+                        sim = round(item['vector_similarity']*100, 2)
+                        print(f"   {i}. {name}: {sim}%")
+            except Exception as e:
+                print(f"[DEBUG] Vector search failed: {e}, continuing with SQL results only")
+                vector_search_results = []
         
         # If no results with filters, return all job seekers as fallback
         if not results:
@@ -764,6 +838,37 @@ def advanced_user_search(query: str, filters: Optional[Dict] = None, limit: int 
         conn.close()
         
         execution_time = time.time() - start_time
+        
+        # Print detailed search summary
+        print(f"\n{'='*80}")
+        print(f"[SEARCH] CANDIDATE SEARCH BREAKDOWN")
+        print(f"{'='*80}")
+        print(f"Query: '{query}'")
+        print(f"{'-'*80}")
+        print(f"[AI] AI Parsed Filters:")
+        for key, value in ai_filters.items():
+            if value:
+                print(f"   * {key}: {value}")
+        print(f"{'-'*80}")
+        if vector_search_results:
+            print(f"[VECTOR] Vector Search Results:")
+            print(f"   * Candidates processed: {len(vector_search_results)}")
+            print(f"   * Top vector similarities:")
+            for i, item in enumerate(vector_search_results[:5], 1):
+                name = item['candidate'].get('first_name', 'Unknown')
+                sim = round(item['vector_similarity']*100, 2)
+                print(f"      {i}. {name}: {sim}% similarity")
+        print(f"{'-'*80}")
+        print(f"[SQL] SQL Search Results:")
+        print(f"   * Candidates found: {len(results)}")
+        print(f"   * Execution time: {execution_time:.3f}s")
+        if results:
+            print(f"   * Top candidates:")
+            for i, r in enumerate(results[:5], 1):
+                name = f"{r['first_name']} {r['last_name']}" if r.get('first_name') else 'Unknown'
+                match = round(r.get('match_score', 0), 2)
+                print(f"      {i}. {name}: {match}% match")
+        print(f"{'='*80}\n")
         
         return {
             "results": results,
@@ -858,10 +963,11 @@ def shortlist_candidate(recruiter_id: int, candidate_id: int, job_id: int = None
             (shortlist_id,)
         )
         return cursor.fetchone()
-    except mysql.connector.IntegrityError:
-        raise ValueError("Candidate already shortlisted")
     except mysql.connector.Error as e:
         conn.rollback()
+        # Check if it's a duplicate key error (integrity error)
+        if e.errno == 1062:  # ER_DUP_ENTRY
+            raise ValueError("Candidate already shortlisted")
         raise ValueError(f"Database error: {e}")
     finally:
         cursor.close()

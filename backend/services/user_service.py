@@ -132,12 +132,12 @@ def create_skill(skill_data: SkillCreate) -> dict:
         
         cursor.execute("SELECT * FROM skills WHERE id = %s", (skill_id,))
         return cursor.fetchone()
-    except mysql.connector.IntegrityError:
-        # Skill already exists, fetch and return it
-        cursor.execute("SELECT * FROM skills WHERE name = %s", (skill_data.name,))
-        return cursor.fetchone()
     except mysql.connector.Error as e:
         conn.rollback()
+        # Check if it's a duplicate key error (integrity error) - skill already exists
+        if e.errno == 1062:  # ER_DUP_ENTRY
+            cursor.execute("SELECT * FROM skills WHERE name = %s", (skill_data.name,))
+            return cursor.fetchone()
         raise ValueError(f"Database error: {e}")
     finally:
         cursor.close()
@@ -182,10 +182,11 @@ def add_user_skill(user_id: int, user_skill_data: UserSkillCreate) -> dict:
             (user_id, user_skill_data.skill_id)
         )
         return cursor.fetchone()
-    except mysql.connector.IntegrityError:
-        raise ValueError("User already has this skill")
     except mysql.connector.Error as e:
         conn.rollback()
+        # Check if it's a duplicate key error (integrity error)
+        if e.errno == 1062:  # ER_DUP_ENTRY
+            raise ValueError("User already has this skill")
         raise ValueError(f"Database error: {e}")
     finally:
         cursor.close()

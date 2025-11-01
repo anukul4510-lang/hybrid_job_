@@ -52,9 +52,12 @@ async function loadUsers() {
     try {
         const users = await apiClient.request('/admin/users', { method: 'GET' });
         
+        // Filter out admin users - only show jobseekers and recruiters
+        const filteredUsers = users.filter(user => user.role !== 'admin');
+        
         const usersHTML = `
             <h2 style="margin-top: 40px;">All Users</h2>
-            ${users.map(user => `
+            ${filteredUsers.map(user => `
                 <div class="job-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div style="flex: 1;">
                         <h3>${user.email}</h3>
@@ -67,7 +70,6 @@ async function loadUsers() {
                                 style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
                             <option value="jobseeker" ${user.role === 'jobseeker' ? 'selected' : ''}>Job Seeker</option>
                             <option value="recruiter" ${user.role === 'recruiter' ? 'selected' : ''}>Recruiter</option>
-                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                         <button type="button" class="btn btn-danger" onclick="deleteUser(${user.id}, '${user.email.replace(/'/g, "\\'")}')" 
                                 style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">

@@ -132,26 +132,26 @@ def seed_skills():
         cursor.close()
         conn.close()
         
-        print(f"\n✅ Skill seeding completed!")
-        print(f"   📊 New skills added: {skills_inserted}")
-        print(f"   ⏭️  Skills skipped (already exist): {skills_skipped}")
-        print(f"   📈 Total skills in database: {skills_inserted + skills_skipped}")
+        print(f"\n[SUCCESS] Skill seeding completed!")
+        print(f"   [INFO] New skills added: {skills_inserted}")
+        print(f"   [INFO] Skills skipped (already exist): {skills_skipped}")
+        print(f"   [INFO] Total skills in database: {skills_inserted + skills_skipped}")
         
         return skills_inserted
         
     except mysql.connector.Error as e:
-        print(f"❌ Error seeding skills: {e}")
+        print(f"[ERROR] Error seeding skills: {e}")
         if conn:
             conn.rollback()
             conn.close()
         return 0
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         return 0
 
 
 if __name__ == "__main__":
-    print("🌱 Starting skill seeding process...")
+    print("[INIT] Starting skill seeding process...")
     print("   This may take a moment...\n")
     
     seed_skills()

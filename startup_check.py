@@ -9,10 +9,10 @@ import sys
 def check_file(filepath, description):
     """Check if a file exists."""
     if os.path.exists(filepath):
-        print(f"   ✓ {description}")
+        print(f"   [OK] {description}")
         return True
     else:
-        print(f"   ✗ {description} - NOT FOUND")
+        print(f"   [FAIL] {description} - NOT FOUND")
         return False
 
 def check_env_variable(var_name):
@@ -45,9 +45,9 @@ def main():
         print("\n2. Checking .env variables...")
         for var in required_vars:
             if check_env_variable(var):
-                print(f"   ✓ {var} is set")
+                print(f"   [OK] {var} is set")
             else:
-                print(f"   ✗ {var} is missing or empty")
+                print(f"   [FAIL] {var} is missing or empty")
                 print(f"   → ACTION: Add {var} to your .env file")
                 all_good = False
     
@@ -66,9 +66,9 @@ def main():
     for package, name in required_packages:
         try:
             __import__(package)
-            print(f"   ✓ {name}")
+            print(f"   [OK] {name}")
         except ImportError:
-            print(f"   ✗ {name} - NOT INSTALLED")
+            print(f"   [FAIL] {name} - NOT INSTALLED")
             print(f"   → ACTION: pip install -r requirements.txt")
             all_good = False
             break
@@ -84,14 +84,14 @@ def main():
     # Summary
     print("\n" + "=" * 60)
     if all_good:
-        print("✅ All checks passed! You can start the server.")
+        print("[SUCCESS] All checks passed! You can start the server.")
         print("\nNext steps:")
         print("1. Make sure MySQL is running")
         print("2. Run: python run.py")
         print("3. Open browser: http://127.0.0.1:5500 (frontend)")
         print("4. API docs at: http://127.0.0.1:8000/api/docs")
     else:
-        print("❌ Some checks failed. Please fix the issues above.")
+        print("[FAIL] Some checks failed. Please fix the issues above.")
         print("\nQuick fixes:")
         print("1. Install dependencies: pip install -r requirements.txt")
         print("2. Create .env file: copy .env.example .env")

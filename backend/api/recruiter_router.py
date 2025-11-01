@@ -122,10 +122,11 @@ async def get_job_applications(
     
     cursor.execute(
         """
-        SELECT a.*, u.email, up.first_name, up.last_name
+        SELECT a.*, u.email, up.first_name, up.last_name, j.title as job_title
         FROM applications a
         JOIN users u ON a.jobseeker_id = u.id
         LEFT JOIN user_profiles up ON u.id = up.user_id
+        JOIN job_postings j ON a.job_id = j.id
         WHERE a.job_id = %s
         ORDER BY a.applied_date DESC
         """,
@@ -283,6 +284,8 @@ async def add_to_shortlist(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error shortlisting candidate: {str(e)}")
 
 
 @router.get("/shortlist")

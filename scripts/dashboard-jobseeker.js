@@ -265,11 +265,56 @@ async function updateProfile() {
 async function showBrowseJobs() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h2>Browse Jobs</h2>
-        <div class="job-search-bar">
-            <input type="text" id="job-search" placeholder="Search for jobs...">
-            <button type="button" class="job-search-btn" onclick="searchJobs()">Search</button>
+        <div class="search-container">
+            <h2 style="margin-bottom: 20px; color: white;">🔍 AI-Powered Job Search</h2>
+            <p style="margin-bottom: 20px; opacity: 0.9;">
+                Use natural language to find your perfect job. Try: "Python developer in San Francisco" or "Remote marketing manager"
+            </p>
+            
+            <input type="text" id="job-search" class="search-input" 
+                   placeholder="Describe your dream job...">
+            
+            <div class="filter-group">
+                <input type="text" id="job-location-filter" placeholder="Location (optional)" 
+                       style="padding: 12px; border: none; border-radius: 8px;">
+                <select id="job-type-filter" style="padding: 12px; border: none; border-radius: 8px;">
+                    <option value="">All Types</option>
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="freelance">Freelance</option>
+                    <option value="internship">Internship</option>
+                </select>
+                <select id="job-salary-filter" style="padding: 12px; border: none; border-radius: 8px;">
+                    <option value="">All Salaries</option>
+                    <option value="50000">$50K+</option>
+                    <option value="75000">$75K+</option>
+                    <option value="100000">$100K+</option>
+                    <option value="125000">$125K+</option>
+                    <option value="150000">$150K+</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" id="search-jobs-btn" onclick="searchJobs()" 
+                    style="width: 100%; padding: 16px 20px; font-size: 1.15rem; font-weight: 700; 
+                           background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+                           color: #F8F8FF;
+                           border: 2px solid rgba(212, 175, 55, 0.3);
+                           box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+                           transition: all 0.3s ease;
+                           cursor: pointer;">
+                🔍 Search Jobs
+            </button>
+            
+            <style>
+                #search-jobs-btn:hover {
+                    background: linear-gradient(135deg, #4169E1 0%, #0B3D91 50%, #D4AF37 100%) !important;
+                    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+                    transform: translateY(-2px);
+                }
+            </style>
         </div>
+        
         <div id="jobs-grid"></div>
     `;
     
@@ -294,15 +339,32 @@ async function showBrowseJobs() {
 async function searchJobs() {
     const query = document.getElementById('job-search').value;
     const jobsGrid = document.getElementById('jobs-grid');
+    const location = document.getElementById('job-location-filter')?.value;
+    const jobType = document.getElementById('job-type-filter')?.value;
+    const minSalary = document.getElementById('job-salary-filter')?.value;
     
-    if (!query) {
+    // Build filters
+    const filters = {};
+    if (location) filters.location = location;
+    if (jobType) filters.employment_type = jobType;
+    if (minSalary) filters.min_salary = parseFloat(minSalary);
+    
+    if (!query && Object.keys(filters).length === 0) {
         displayJobs(allJobs);
         return;
     }
     
     try {
-        const results = await apiClient.hybridSearch(query, {}, 20);
+        const results = await apiClient.hybridSearch(query || "", filters, 50);
         displayJobs(results.results);
+        
+        // Show search result info
+        if (query || Object.keys(filters).length > 0) {
+            const resultCount = document.createElement('div');
+            resultCount.style.cssText = 'margin: 20px 0; padding: 15px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #4169E1;';
+            resultCount.innerHTML = `<strong>Found ${results.results?.length || 0} jobs</strong> matching your search criteria.`;
+            jobsGrid.parentNode.insertBefore(resultCount, jobsGrid);
+        }
     } catch (error) {
         showError('Search failed: ' + error.message, document.getElementById('content'));
     }

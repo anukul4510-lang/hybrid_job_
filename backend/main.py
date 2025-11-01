@@ -3,21 +3,51 @@ Main FastAPI application entry point.
 Handles server initialization, middleware, and route registration.
 """
 
+import os
+import warnings
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
+# Suppress warnings from gRPC/ALTS before importing Google AI
+warnings.filterwarnings('ignore', category=UserWarning)
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
 
 from backend.api import auth_router, jobseeker_router, recruiter_router, admin_router, search_router
 from backend.database.mysql_connection import init_mysql_db
 from backend.database.chroma_connection import init_chroma_db
 
-# Create FastAPI app instance
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown."""
+    # Startup
+    print("Starting application...")
+    await init_mysql_db()
+    init_chroma_db()
+    
+    # Create default admin account
+    from backend.services.admin_service import create_default_admin
+    create_default_admin()
+    
+    print("Application startup complete.")
+    
+    yield  # Application is running
+    
+    # Shutdown
+    print("Shutting down application...")
+    # Add any cleanup code here if needed
+
+
+# Create FastAPI app instance with lifespan
 app = FastAPI(
     title="Hybrid Job Application System",
     description="Full-stack job application platform with AI-powered matching",
     version="1.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    lifespan=lifespan
 )
 
 # Configure CORS for frontend communication
@@ -44,15 +74,6 @@ app.include_router(admin_router.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(search_router.router, prefix="/api/search", tags=["Search"])
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connections on startup."""
-    await init_mysql_db()
-    init_chroma_db()
-    
-    # Create default admin account
-    from backend.services.admin_service import create_default_admin
-    create_default_admin()
 
 
 @app.get("/")

@@ -559,42 +559,94 @@ async function showMyJobs() {
 function showCreateJob() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h2>Create New Job Posting</h2>
-        <form id="create-job-form" class="profile-form">
-            <div class="form-group">
-                <label>Job Title:</label>
-                <input type="text" id="job-title" required>
+        <div style="margin-bottom: 30px;">
+            <h2 style="margin: 0; color: #0B3D91; font-size: 2rem; font-weight: 700;">✨ Create New Job Posting</h2>
+            <p style="color: #666; margin-top: 8px; font-size: 1.1rem;">Fill in the details below to post a new job opportunity</p>
+        </div>
+        
+        <form id="create-job-form" style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 8px 32px rgba(11, 61, 145, 0.1); border: 2px solid rgba(65, 105, 225, 0.1);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">Job Title: <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="job-title" required 
+                           style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa;"
+                           onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                           onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                           placeholder="e.g., Senior Software Engineer">
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">Company: <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="company" required 
+                           style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa;"
+                           onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                           onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                           placeholder="Your company name">
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">📍 Location:</label>
+                    <input type="text" id="location" 
+                           style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa;"
+                           onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                           onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                           placeholder="e.g., San Francisco, CA">
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">Employment Type:</label>
+                    <select id="employment-type" 
+                            style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa; cursor: pointer;"
+                            onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                            onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'">
+                        <option value="full-time">Full Time</option>
+                        <option value="part-time">Part Time</option>
+                        <option value="contract">Contract</option>
+                        <option value="internship">Internship</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">💰 Min Salary:</label>
+                    <input type="number" id="min-salary" 
+                           style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa;"
+                           onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                           onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                           placeholder="e.g., 80000">
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">💰 Max Salary:</label>
+                    <input type="number" id="max-salary" 
+                           style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa;"
+                           onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                           onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                           placeholder="e.g., 120000">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Company:</label>
-                <input type="text" id="company" required>
+            
+            <div class="form-group full-width" style="margin: 25px 0 0 0;">
+                <label style="display: block; font-weight: 600; color: #0B3D91; margin-bottom: 8px; font-size: 0.95rem;">📝 Description: <span style="color: #e74c3c;">*</span></label>
+                <textarea id="description" rows="10" required 
+                          style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; background: #fafafa; resize: vertical; font-family: inherit;"
+                          onfocus="this.style.borderColor='#4169E1'; this.style.background='white'; this.style.boxShadow='0 0 0 3px rgba(65,105,225,0.1)'"
+                          onblur="this.style.borderColor='#e0e0e0'; this.style.background='#fafafa'; this.style.boxShadow='none'"
+                          placeholder="Provide a detailed description of the job, including responsibilities, requirements, and benefits..."></textarea>
             </div>
-            <div class="form-group">
-                <label>Location:</label>
-                <input type="text" id="location">
+            
+            <div style="display: flex; gap: 12px; margin-top: 35px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="showMyJobs()" 
+                        style="padding: 12px 30px; font-size: 1rem; font-weight: 600; border-radius: 10px; transition: all 0.3s ease;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" 
+                        style="padding: 12px 35px; font-size: 1rem; font-weight: 600; border-radius: 10px; 
+                               background: linear-gradient(135deg, #4169E1 0%, #0B3D91 100%);
+                               box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+                               transition: all 0.3s ease; border: none;">
+                    ✨ Create Job
+                </button>
             </div>
-            <div class="form-group">
-                <label>Employment Type:</label>
-                <select id="employment-type">
-                    <option value="full-time">Full Time</option>
-                    <option value="part-time">Part Time</option>
-                    <option value="contract">Contract</option>
-                    <option value="internship">Internship</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Min Salary:</label>
-                <input type="number" id="min-salary">
-            </div>
-            <div class="form-group">
-                <label>Max Salary:</label>
-                <input type="number" id="max-salary">
-            </div>
-            <div class="form-group full-width">
-                <label>Description:</label>
-                <textarea id="description" rows="10" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Create Job</button>
         </form>
     `;
     
@@ -633,6 +685,10 @@ async function createJob() {
  */
 async function viewApplications(jobId) {
     const content = document.getElementById('content');
+    
+    // Store jobId for the update function
+    window.currentJobApplicationsJobId = jobId;
+    
     content.innerHTML = '<h2>Applications</h2>';
     
     const loader = createLoader();
@@ -648,24 +704,144 @@ async function viewApplications(jobId) {
         
         const appsHTML = applications.map(app => {
             const companyName = app.recruiter_company_name || 'Company not specified';
+            const statusBadgeClass = getStatusBadgeClass(app.status);
+            const currentStatus = app.status || 'pending';
+            
             return `
-            <div class="job-card">
-                <h3>${app.first_name} ${app.last_name}</h3>
-                <p>Email: ${app.email}</p>
-                <p>Company: <strong style="color: #0B3D91;">${companyName}</strong></p>
-                <p>Status: <strong>${app.status}</strong></p>
-                <p>Applied: ${formatDate(app.applied_date)}</p>
-                <div class="actions">
-                    <button class="btn btn-success" onclick="updateAppStatus(${app.id}, 'shortlisted')">Shortlist</button>
-                    <button class="btn btn-danger" onclick="updateAppStatus(${app.id}, 'rejected')">Reject</button>
+            <div class="job-card" style="position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3>${app.first_name} ${app.last_name}</h3>
+                        <div style="display: flex; align-items: center; gap: 15px; margin-top: 5px;">
+                            <p style="margin: 5px 0;">📧 ${app.email}</p>
+                            ${app.phone ? `<p style="margin: 5px 0;">📱 ${app.phone}</p>` : ''}
+                        </div>
+                    </div>
+                    <span class="status-badge ${statusBadgeClass}" style="font-size: 0.85rem; font-weight: 600;">
+                        ${currentStatus.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div style="display: flex; gap: 20px; margin: 15px 0; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="flex: 1;">
+                        <strong>Company:</strong><br>
+                        <span style="color: #0B3D91;">${companyName}</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <strong>Applied:</strong><br>
+                        ${formatDate(app.applied_date)}
+                    </div>
+                    ${app.reviewed_date ? `
+                        <div style="flex: 1;">
+                            <strong>Reviewed:</strong><br>
+                            ${formatDate(app.reviewed_date)}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${app.cover_letter ? `
+                    <div style="margin: 15px 0; padding: 12px; background: #f0f4ff; border-radius: 8px; border-left: 3px solid #4169E1;">
+                        <strong>Cover Letter:</strong>
+                        <p style="margin-top: 8px; color: #555;">${app.cover_letter.substring(0, 200)}${app.cover_letter.length > 200 ? '...' : ''}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-top: 15px; border-top: 2px solid #e9ecef;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #555;">
+                            Change Status:
+                        </label>
+                        <select id="status-select-${app.id}" style="width: 100%; padding: 10px; border: 2px solid #4169E1; border-radius: 8px; font-weight: 600; background: white;">
+                            <option value="pending" ${currentStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="reviewed" ${currentStatus === 'reviewed' ? 'selected' : ''}>Reviewed</option>
+                            <option value="shortlisted" ${currentStatus === 'shortlisted' ? 'selected' : ''}>Shortlisted</option>
+                            <option value="accepted" ${currentStatus === 'accepted' ? 'selected' : ''}>Accepted</option>
+                            <option value="rejected" ${currentStatus === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #555;">
+                            Actions:
+                        </label>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-success" onclick="updateAppStatusFromSelect(${app.id}, ${app.id})" 
+                                    style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 600;">
+                                ✅ Update Status
+                            </button>
+                            <button class="btn" onclick="contactCandidate(${app.id}, '${app.email}', '${app.first_name}', '${app.last_name}')" 
+                                    style="flex: 1; padding: 10px; background: #4169E1; color: white; border-radius: 8px; font-weight: 600; border: none;">
+                                ✉️ Contact
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
         }).join('');
         
-        content.innerHTML = '<h2>Applications</h2>' + appsHTML;
+        content.innerHTML = `
+            <style>
+                .status-badge.match-high { background: #4CAF50; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.match-medium { background: #FF9800; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.match-low { background: #F44336; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.status-neutral { background: #2196F3; color: white; padding: 6px 12px; border-radius: 20px; }
+            </style>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="margin: 0;">📋 Job Applications</h2>
+                <button class="btn btn-secondary" onclick="showMyJobs()" style="padding: 10px 20px; border-radius: 8px;">
+                    ← Back to Jobs
+                </button>
+            </div>
+            ${appsHTML}
+        `;
     } catch (error) {
         content.innerHTML = '<div class="error-message">Failed to load applications: ' + error.message + '</div>';
+    }
+}
+
+/**
+ * Get status badge class based on status
+ */
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'accepted':
+        case 'hired':
+            return 'match-high';
+        case 'shortlisted':
+        case 'reviewed':
+            return 'match-medium';
+        case 'rejected':
+            return 'match-low';
+        default:
+            return 'status-neutral';
+    }
+}
+
+/**
+ * Update application status from select dropdown
+ */
+async function updateAppStatusFromSelect(appId, selectId) {
+    const select = document.getElementById(`status-select-${selectId}`);
+    const newStatus = select.value;
+    
+    if (!newStatus) {
+        showError('Please select a status', document.getElementById('content'));
+        return;
+    }
+    
+    try {
+        await apiClient.updateApplicationStatus(appId, newStatus);
+        showSuccess(`Status updated to ${newStatus}!`, document.getElementById('content'));
+        
+        // Reload applications to show updated status
+        if (window.currentJobApplicationsJobId) {
+            await viewApplications(window.currentJobApplicationsJobId);
+        } else {
+            // If viewing all applications, reload that view
+            await showApplications();
+        }
+    } catch (error) {
+        showError('Failed to update status: ' + error.message, document.getElementById('content'));
     }
 }
 
@@ -676,9 +852,26 @@ async function updateAppStatus(applicationId, status) {
     try {
         await apiClient.updateApplicationStatus(applicationId, status);
         showSuccess('Application status updated!', document.getElementById('content'));
+        
+        // Reload applications to show updated status
+        if (window.currentJobApplicationsJobId) {
+            await viewApplications(window.currentJobApplicationsJobId);
+        }
     } catch (error) {
         showError('Failed to update status: ' + error.message, document.getElementById('content'));
     }
+}
+
+/**
+ * Contact candidate via email
+ */
+function contactCandidate(appId, email, firstName, lastName) {
+    const candidateName = `${firstName} ${lastName}`;
+    const subject = encodeURIComponent(`Regarding Your Job Application`);
+    const body = encodeURIComponent(`Hello ${firstName},\n\nThank you for your interest in the position. We wanted to reach out regarding your application.\n\nBest regards,\n[Your Name]`);
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`;
+    
+    window.open(gmailUrl, '_blank');
 }
 
 /**
@@ -723,7 +916,12 @@ async function showApplications() {
         for (const job of myJobs) {
             try {
                 const apps = await apiClient.getJobApplications(job.id);
-                allApps.push(...apps);
+                // Add company info to each application
+                const appsWithCompany = apps.map(app => ({
+                    ...app,
+                    company: job.company || app.recruiter_company_name
+                }));
+                allApps.push(...appsWithCompany);
             } catch (error) {
                 console.error(`Error fetching applications for job ${job.id}:`, error);
             }
@@ -734,20 +932,101 @@ async function showApplications() {
             return;
         }
         
-        content.innerHTML = '<h2>All Applications</h2>';
-        for (const app of allApps) {
-            const appHTML = document.createElement('div');
-            appHTML.className = 'job-card';
-            const companyName = app.recruiter_company_name || 'Company not specified';
-            appHTML.innerHTML = `
-                <h3>${app.first_name} ${app.last_name}</h3>
-                <p>Email: ${app.email}</p>
-                ${app.job_title ? `<p>Job: ${app.job_title}</p>` : ''}
-                <p>Company: <strong style="color: #0B3D91;">${companyName}</strong></p>
-                <p>Status: <strong>${app.status}</strong></p>
-            `;
-            content.appendChild(appHTML);
-        }
+        const appsHTML = allApps.map(app => {
+            const companyName = app.company || app.recruiter_company_name || 'Company not specified';
+            const statusBadgeClass = getStatusBadgeClass(app.status);
+            const currentStatus = app.status || 'pending';
+            
+            return `
+            <div class="job-card" style="position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3>${app.first_name} ${app.last_name}</h3>
+                        <div style="display: flex; align-items: center; gap: 15px; margin-top: 5px;">
+                            <p style="margin: 5px 0;">📧 ${app.email}</p>
+                            ${app.phone ? `<p style="margin: 5px 0;">📱 ${app.phone}</p>` : ''}
+                        </div>
+                    </div>
+                    <span class="status-badge ${statusBadgeClass}" style="font-size: 0.85rem; font-weight: 600;">
+                        ${currentStatus.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div style="display: flex; gap: 20px; margin: 15px 0; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="flex: 1;">
+                        <strong>Company:</strong><br>
+                        <span style="color: #0B3D91;">${companyName}</span>
+                    </div>
+                    ${app.job_title ? `
+                        <div style="flex: 1;">
+                            <strong>Position:</strong><br>
+                            <span style="color: #4169E1;">${app.job_title}</span>
+                        </div>
+                    ` : ''}
+                    <div style="flex: 1;">
+                        <strong>Applied:</strong><br>
+                        ${formatDate(app.applied_date)}
+                    </div>
+                    ${app.reviewed_date ? `
+                        <div style="flex: 1;">
+                            <strong>Reviewed:</strong><br>
+                            ${formatDate(app.reviewed_date)}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${app.cover_letter ? `
+                    <div style="margin: 15px 0; padding: 12px; background: #f0f4ff; border-radius: 8px; border-left: 3px solid #4169E1;">
+                        <strong>Cover Letter:</strong>
+                        <p style="margin-top: 8px; color: #555;">${app.cover_letter.substring(0, 200)}${app.cover_letter.length > 200 ? '...' : ''}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-top: 15px; border-top: 2px solid #e9ecef;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #555;">
+                            Change Status:
+                        </label>
+                        <select id="status-select-${app.id}" style="width: 100%; padding: 10px; border: 2px solid #4169E1; border-radius: 8px; font-weight: 600; background: white;">
+                            <option value="pending" ${currentStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="reviewed" ${currentStatus === 'reviewed' ? 'selected' : ''}>Reviewed</option>
+                            <option value="shortlisted" ${currentStatus === 'shortlisted' ? 'selected' : ''}>Shortlisted</option>
+                            <option value="accepted" ${currentStatus === 'accepted' ? 'selected' : ''}>Accepted</option>
+                            <option value="rejected" ${currentStatus === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #555;">
+                            Actions:
+                        </label>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-success" onclick="updateAppStatusFromSelect(${app.id}, ${app.id})" 
+                                    style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 600;">
+                                ✅ Update Status
+                            </button>
+                            <button class="btn" onclick="contactCandidate(${app.id}, '${app.email}', '${app.first_name}', '${app.last_name}')" 
+                                    style="flex: 1; padding: 10px; background: #4169E1; color: white; border-radius: 8px; font-weight: 600; border: none;">
+                                ✉️ Contact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }).join('');
+        
+        content.innerHTML = `
+            <style>
+                .status-badge.match-high { background: #4CAF50; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.match-medium { background: #FF9800; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.match-low { background: #F44336; color: white; padding: 6px 12px; border-radius: 20px; }
+                .status-badge.status-neutral { background: #2196F3; color: white; padding: 6px 12px; border-radius: 20px; }
+            </style>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="margin: 0;">📋 All Applications</h2>
+            </div>
+            ${appsHTML}
+        `;
     } catch (error) {
         content.innerHTML = '<div class="error-message">Failed to load applications: ' + error.message + '</div>';
     }
@@ -766,7 +1045,10 @@ window.downloadShortlistCSV = downloadShortlistCSV;
 window.showMyJobs = showMyJobs;
 window.showCreateJob = showCreateJob;
 window.viewApplications = viewApplications;
+window.updateAppStatusFromSelect = updateAppStatusFromSelect;
+window.contactCandidate = contactCandidate;
 window.updateAppStatus = updateAppStatus;
+window.getStatusBadgeClass = getStatusBadgeClass;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
 window.showApplications = showApplications;
@@ -789,7 +1071,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
             
             if (companyNameSpan && userInfo && userInfo.company_name) {
-                companyNameSpan.innerHTML = ` | <strong style="color: #0B3D91;">${userInfo.company_name}</strong>`;
+                companyNameSpan.innerHTML = ` | <strong style="color: #FFD700;">${userInfo.company_name}</strong>`;
             }
         } catch (error) {
             console.warn('Could not load user info:', error);
@@ -798,3 +1080,22 @@ window.addEventListener('DOMContentLoaded', async () => {
         showCandidateSearch();
     }
 });
+
+// Expose functions globally for onclick handlers
+window.showCandidateSearch = showCandidateSearch;
+window.searchCandidates = searchCandidates;
+window.viewCandidateProfile = viewCandidateProfile;
+window.shortlistCandidate = shortlistCandidate;
+window.filterShortlist = filterShortlist;
+window.downloadShortlistCSV = downloadShortlistCSV;
+window.removeFromShortlist = removeFromShortlist;
+window.showCreateJob = showCreateJob;
+window.createJob = createJob;
+window.showMyJobs = showMyJobs;
+window.viewApplications = viewApplications;
+window.updateAppStatusFromSelect = updateAppStatusFromSelect;
+window.contactCandidate = contactCandidate;
+window.updateAppStatus = updateAppStatus;
+window.getStatusBadgeClass = getStatusBadgeClass;
+window.editJob = editJob;
+window.deleteJob = deleteJob;

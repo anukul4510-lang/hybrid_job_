@@ -83,6 +83,80 @@
             border-radius: 8px;
         }
         
+        .search-container {
+            background: linear-gradient(135deg, #F8F8FF 0%, #ffffff 100%);
+            padding: 35px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(192, 192, 192, 0.3);
+            box-shadow: 0 8px 30px rgba(11, 61, 145, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .search-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0B3D91 0%, #4169E1 50%, #D4AF37 100%);
+        }
+        
+        .search-container h2 {
+            color: #0B3D91 !important;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .search-container p {
+            color: #666 !important;
+            opacity: 1 !important;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            border: 2px solid rgba(192, 192, 192, 0.4);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            background: #ffffff;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #4169E1;
+            box-shadow: 0 0 0 4px rgba(65, 105, 225, 0.1), 0 4px 12px rgba(212, 175, 55, 0.15);
+        }
+        
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            border: 2px solid rgba(192, 192, 192, 0.4) !important;
+            background: #ffffff !important;
+            color: #333 !important;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4169E1 !important;
+            box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1) !important;
+        }
+        
         /* Welcome Hero Section */
         .welcome-hero {
             text-align: center;

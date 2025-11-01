@@ -205,7 +205,7 @@ class ApiClient {
     }
 
     async getJobRecommendations(limit = 10) {
-        return this.request(`/search/recommendations?limit=${limit}`);
+        return this.request(`/jobseeker/recommendations?limit=${limit}`);
     }
 
     // Skills endpoints
