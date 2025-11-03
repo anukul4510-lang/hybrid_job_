@@ -4,39 +4,69 @@
  */
 
 import { apiClient } from './api-client.js';
+import { validatePhoneNumber, updatePhoneInputForCountry } from './phone-validation.js';
 
-// Get DOM elements
-const loginSection = document.getElementById('login-section');
-const registerSection = document.getElementById('register-section');
-const homeSection = document.getElementById('home-section');
-const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
+// DOM element references (will be initialized)
+let loginSection, registerSection, homeSection, loginForm, registerForm;
+
+/**
+ * Initialize DOM elements
+ */
+function initializeElements() {
+    loginSection = document.getElementById('login-section');
+    registerSection = document.getElementById('register-section');
+    homeSection = document.getElementById('home-section');
+    loginForm = document.getElementById('login-form');
+    registerForm = document.getElementById('register-form');
+}
 
 /**
  * Show login form
  */
 function showLogin() {
-    loginSection.classList.remove('hidden');
-    registerSection.classList.add('hidden');
-    homeSection.classList.add('hidden');
+    if (!loginSection || !registerSection || !homeSection) {
+        initializeElements();
+    }
+    if (loginSection && registerSection && homeSection) {
+        loginSection.classList.remove('hidden');
+        registerSection.classList.add('hidden');
+        homeSection.classList.add('hidden');
+    }
 }
 
 /**
  * Show registration form
  */
 function showRegister() {
-    registerSection.classList.remove('hidden');
-    loginSection.classList.add('hidden');
-    homeSection.classList.add('hidden');
+    if (!loginSection || !registerSection || !homeSection) {
+        initializeElements();
+    }
+    if (loginSection && registerSection && homeSection) {
+        registerSection.classList.remove('hidden');
+        loginSection.classList.add('hidden');
+        homeSection.classList.add('hidden');
+    }
 }
 
 /**
  * Show home/welcome section
  */
 function showHome() {
-    homeSection.classList.remove('hidden');
-    loginSection.classList.add('hidden');
-    registerSection.classList.add('hidden');
+    if (!loginSection || !registerSection || !homeSection) {
+        initializeElements();
+    }
+    if (loginSection && registerSection && homeSection) {
+        homeSection.classList.remove('hidden');
+        loginSection.classList.add('hidden');
+        registerSection.classList.add('hidden');
+    }
+}
+
+// Make functions globally available immediately (before DOM loads)
+if (typeof window !== 'undefined') {
+    window.showLogin = showLogin;
+    window.showRegister = showRegister;
+    window.showHome = showHome;
 }
 
 // Toggle company name field based on role selection
@@ -56,11 +86,6 @@ if (registerRoleSelect && companyNameGroup && companyNameInput) {
         }
     });
 }
-
-// Make functions globally available
-window.showLogin = showLogin;
-window.showRegister = showRegister;
-window.showHome = showHome;
 
 // Handle login form submission
 if (loginForm) {
@@ -95,8 +120,26 @@ if (loginForm) {
     });
 }
 
+// Update phone input when country code changes
+function initializePhoneValidation() {
+    const countryCodeSelect = document.getElementById('register-country-code');
+    const phoneInput = document.getElementById('register-phone');
+    const phoneHelpText = document.getElementById('phone-help-text');
+
+    if (countryCodeSelect && phoneInput && phoneHelpText) {
+        countryCodeSelect.addEventListener('change', function() {
+            updatePhoneInputForCountry(phoneInput, countryCodeSelect, phoneHelpText);
+            // Clear phone input when country changes
+            phoneInput.value = '';
+        });
+    }
+}
+
 // Handle registration form submission
-if (registerForm) {
+function initializeRegistrationForm() {
+    const registerForm = document.getElementById('register-form');
+    if (!registerForm) return;
+    
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -110,11 +153,21 @@ if (registerForm) {
         const rawPhone = phoneInput?.value.trim();
         const countryCode = countryCodeSelect?.value;
 
-        if (rawPhone && !/^\d{7,15}$/.test(rawPhone)) {
-            alert('Please enter a valid phone number (digits only, 7 to 15 digits).');
+        // Validate phone number based on country code
+        if (rawPhone) {
+            const validation = validatePhoneNumber(rawPhone, countryCode);
+            if (!validation.valid) {
+                alert(validation.message);
+                phoneInput.focus();
+                return;
+            }
+        } else {
+            alert('Please enter a phone number.');
+            phoneInput.focus();
             return;
         }
-        const phone = rawPhone ? countryCode + rawPhone : null;
+        
+        const phone = countryCode + rawPhone;
         const location = document.getElementById('register-location')?.value;
         const company_name = document.getElementById('register-company-name')?.value.trim();
 
@@ -138,8 +191,27 @@ if (registerForm) {
     });
 }
 
-// Check if user is already logged in
-window.addEventListener('DOMContentLoaded', () => {
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Re-initialize elements
+    initializeElements();
+    
+    // Initialize phone validation
+    initializePhoneValidation();
+    
+    // Initialize registration form
+    initializeRegistrationForm();
+    
+    // Initialize phone validation display
+    const countrySelect = document.getElementById('register-country-code');
+    const phoneInputField = document.getElementById('register-phone');
+    const helpText = document.getElementById('phone-help-text');
+    
+    if (countrySelect && phoneInputField && helpText) {
+        updatePhoneInputForCountry(phoneInputField, countrySelect, helpText);
+    }
+    
+    // Check if user is already logged in
     const token = apiClient.getToken();
     if (token) {
         // User is logged in, check their role and redirect

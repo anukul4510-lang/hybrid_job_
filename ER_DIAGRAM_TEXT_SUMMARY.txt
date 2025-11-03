@@ -1,0 +1,190 @@
+================================================================================
+ENTITY RELATIONSHIP (ER) DIAGRAM - TEXT SUMMARY
+================================================================================
+
+STRONG ENTITIES (Independent):
+─────────────────────────────
+
+1. users (PK: id)
+   ├─ id (PK)
+   ├─ email (UNIQUE)
+   ├─ password_hash
+   ├─ role (jobseeker/recruiter/admin)
+   ├─ company_name
+   ├─ created_at
+   └─ updated_at
+
+2. skills (PK: id)
+   ├─ id (PK)
+   └─ name (UNIQUE)
+
+3. system_settings (PK: id)
+   ├─ id (PK)
+   ├─ setting_key (UNIQUE)
+   ├─ setting_value
+   └─ updated_at
+
+──────────────────────────────────────────────────────────────────────────────
+
+WEAK ENTITIES (Dependent):
+─────────────────────────
+
+4. user_profiles (PK: id, FK: user_id → users.id)
+   ├─ id (PK)
+   ├─ user_id (FK → users)
+   ├─ first_name
+   ├─ last_name
+   ├─ phone
+   ├─ location
+   ├─ address
+   ├─ job_of_choice
+   ├─ bio
+   ├─ profile_picture
+   ├─ resume_url
+   ├─ linkedin_url
+   ├─ portfolio_url
+   ├─ years_experience
+   ├─ created_at
+   └─ updated_at
+
+5. job_postings (PK: id, FK: recruiter_id → users.id)
+   ├─ id (PK)
+   ├─ recruiter_id (FK → users)
+   ├─ title
+   ├─ company
+   ├─ description
+   ├─ location
+   ├─ employment_type
+   ├─ min_salary
+   ├─ max_salary
+   ├─ posted_date
+   ├─ application_deadline
+   ├─ status
+   ├─ created_at
+   └─ updated_at
+
+6. applications (PK: id, FK: jobseeker_id → users.id, FK: job_id → job_postings.id)
+   ├─ id (PK)
+   ├─ jobseeker_id (FK → users)
+   ├─ job_id (FK → job_postings)
+   ├─ resume_url
+   ├─ cover_letter
+   ├─ status
+   ├─ applied_date
+   ├─ reviewed_date
+   └─ updated_at
+   └─ UNIQUE (jobseeker_id, job_id)
+
+7. saved_jobs (PK: id, FK: jobseeker_id → users.id, FK: job_id → job_postings.id)
+   ├─ id (PK)
+   ├─ jobseeker_id (FK → users)
+   ├─ job_id (FK → job_postings)
+   ├─ saved_date
+   └─ UNIQUE (jobseeker_id, job_id)
+
+8. notifications (PK: id, FK: user_id → users.id)
+   ├─ id (PK)
+   ├─ user_id (FK → users)
+   ├─ title
+   ├─ message
+   ├─ type
+   ├─ is_read
+   └─ created_at
+
+9. resumes (PK: id, FK: user_id → users.id)
+   ├─ id (PK)
+   ├─ user_id (FK → users)
+   ├─ title
+   ├─ content
+   ├─ file_url
+   ├─ is_primary
+   ├─ created_at
+   └─ updated_at
+
+10. admin_logs (PK: id, FK: admin_id → users.id)
+    ├─ id (PK)
+    ├─ admin_id (FK → users)
+    ├─ action
+    ├─ target_type
+    ├─ target_id
+    ├─ details
+    └─ created_at
+
+11. shortlisted_candidates (PK: id, FK: recruiter_id → users.id, FK: candidate_id → users.id, FK: job_id → job_postings.id)
+    ├─ id (PK)
+    ├─ recruiter_id (FK → users)
+    ├─ candidate_id (FK → users)
+    ├─ job_id (FK → job_postings, nullable)
+    ├─ match_score
+    ├─ notes
+    ├─ status
+    ├─ shortlisted_date
+    └─ updated_at
+    └─ UNIQUE (recruiter_id, candidate_id)
+
+──────────────────────────────────────────────────────────────────────────────
+
+ASSOCIATIVE ENTITIES (Junction Tables):
+───────────────────────────────────────
+
+12. user_skills (Composite PK: user_id, skill_id)
+    ├─ user_id (FK → users, PK)
+    ├─ skill_id (FK → skills, PK)
+    └─ proficiency_level
+    [Links: users ↔ skills (Many-to-Many)]
+
+13. job_skills (Composite PK: job_id, skill_id)
+    ├─ job_id (FK → job_postings, PK)
+    ├─ skill_id (FK → skills, PK)
+    └─ required
+    [Links: job_postings ↔ skills (Many-to-Many)]
+
+──────────────────────────────────────────────────────────────────────────────
+RELATIONSHIPS SUMMARY:
+──────────────────────────────────────────────────────────────────────────────
+
+ONE-TO-ONE:
+──────────
+users (1) ──────── (1) user_profiles
+
+ONE-TO-MANY:
+───────────
+users (1) ──────── (M) job_postings [as recruiter]
+users (1) ──────── (M) applications [as jobseeker]
+users (1) ──────── (M) saved_jobs [as jobseeker]
+users (1) ──────── (M) notifications
+users (1) ──────── (M) resumes
+users (1) ──────── (M) admin_logs [as admin]
+users (1) ──────── (M) shortlisted_candidates [as recruiter]
+users (1) ──────── (M) shortlisted_candidates [as candidate]
+
+job_postings (1) ──────── (M) applications
+job_postings (1) ──────── (M) saved_jobs
+job_postings (1) ──────── (M) shortlisted_candidates
+
+MANY-TO-MANY (via junction tables):
+──────────────────────────────────
+users (M) ──────── user_skills ──────── (M) skills
+job_postings (M) ──────── job_skills ──────── (M) skills
+
+──────────────────────────────────────────────────────────────────────────────
+CASCADE RULES:
+──────────────────────────────────────────────────────────────────────────────
+
+ON DELETE CASCADE:
+- user_profiles (when user deleted)
+- user_skills (when user or skill deleted)
+- job_skills (when job or skill deleted)
+- job_postings (when recruiter deleted)
+- applications (when jobseeker or job deleted)
+- saved_jobs (when jobseeker or job deleted)
+- notifications (when user deleted)
+- resumes (when user deleted)
+- admin_logs (when admin deleted)
+- shortlisted_candidates (when recruiter or candidate deleted)
+
+ON DELETE SET NULL:
+- shortlisted_candidates.job_id (when job deleted, job_id set to NULL)
+
+──────────────────────────────────────────────────────────────────────────────
+

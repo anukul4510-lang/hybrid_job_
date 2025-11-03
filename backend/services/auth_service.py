@@ -3,17 +3,95 @@ Authentication service with JWT and password hashing.
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import config
 from backend.database.mysql_connection import MySQLConnection
 from backend.models.auth_models import UserCreate, UserLogin, TokenData
 import mysql.connector
+import re
 
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Country code to phone number validation rules
+COUNTRY_PHONE_RULES: Dict[str, Dict] = {
+    "+1": {"length": 10, "name": "US/Canada", "pattern": r"^\d{10}$"},
+    "+91": {"length": 10, "name": "India", "pattern": r"^\d{10}$"},
+    "+44": {"length": 10, "name": "UK", "pattern": r"^\d{10}$"},
+    "+61": {"length": 9, "name": "Australia", "pattern": r"^\d{9}$"},
+    "+81": {"length": 10, "name": "Japan", "pattern": r"^\d{10}$"},
+    "+86": {"length": 11, "name": "China", "pattern": r"^\d{11}$"},
+    "+49": {"length": 11, "name": "Germany", "pattern": r"^\d{11}$"},
+    "+33": {"length": 9, "name": "France", "pattern": r"^\d{9}$"},
+    "+39": {"length": 10, "name": "Italy", "pattern": r"^\d{10}$"},
+    "+34": {"length": 9, "name": "Spain", "pattern": r"^\d{9}$"},
+    "+7": {"length": 10, "name": "Russia", "pattern": r"^\d{10}$"},
+    "+82": {"length": 10, "name": "South Korea", "pattern": r"^\d{10}$"},
+    "+52": {"length": 10, "name": "Mexico", "pattern": r"^\d{10}$"},
+    "+55": {"length": 11, "name": "Brazil", "pattern": r"^\d{11}$"},
+    "+27": {"length": 9, "name": "South Africa", "pattern": r"^\d{9}$"},
+    "+31": {"length": 9, "name": "Netherlands", "pattern": r"^\d{9}$"},
+    "+46": {"length": 9, "name": "Sweden", "pattern": r"^\d{9}$"},
+    "+47": {"length": 8, "name": "Norway", "pattern": r"^\d{8}$"},
+    "+971": {"length": 9, "name": "UAE", "pattern": r"^\d{9}$"},
+    "+65": {"length": 8, "name": "Singapore", "pattern": r"^\d{8}$"},
+    "+60": {"length": 9, "name": "Malaysia", "pattern": r"^\d{9}$"},
+    "+62": {"length": 9, "name": "Indonesia", "pattern": r"^\d{9,11}$"},
+    "+63": {"length": 10, "name": "Philippines", "pattern": r"^\d{10}$"},
+    "+66": {"length": 9, "name": "Thailand", "pattern": r"^\d{9}$"},
+    "+84": {"length": 9, "name": "Vietnam", "pattern": r"^\d{9,10}$"},
+}
+
+
+def validate_phone_number(phone: str) -> tuple:
+    """
+    Validate phone number format based on country code.
+    
+    Args:
+        phone: Full phone number with country code (e.g., "+919876543210")
+        
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not phone:
+        return True, ""  # Phone is optional
+    
+    # Extract country code and number
+    phone_clean = phone.replace(" ", "").replace("-", "")
+    
+    # Try to match country code
+    matched_country = None
+    matched_code = None
+    
+    for country_code, rules in COUNTRY_PHONE_RULES.items():
+        if phone_clean.startswith(country_code):
+            matched_country = rules
+            matched_code = country_code
+            break
+    
+    if not matched_country:
+        # Unknown country code - validate as generic (7-15 digits after +)
+        number_part = re.sub(r"^\+\d{1,4}", "", phone_clean)
+        if len(number_part) < 7 or len(number_part) > 15:
+            return False, "Phone number must be between 7 and 15 digits"
+        if not re.match(r"^\d+$", number_part):
+            return False, "Phone number must contain only digits"
+        return True, ""
+    
+    # Extract number part (without country code)
+    number_part = phone_clean[len(matched_code):]
+    
+    # Remove any non-digit characters
+    number_part = re.sub(r"\D", "", number_part)
+    
+    # Validate against pattern
+    if not re.match(matched_country["pattern"], number_part):
+        return False, f"Phone number for {matched_country['name']} must be exactly {matched_country['length']} digits (excluding country code)"
+    
+    return True, ""
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -77,6 +155,12 @@ def register_user(user_data: UserCreate) -> dict:
     cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
     
     try:
+        # Validate phone number if provided
+        if user_data.phone:
+            is_valid, error_msg = validate_phone_number(user_data.phone)
+            if not is_valid:
+                raise ValueError(error_msg)
+        
         # Check if user already exists
         cursor.execute(
             "SELECT id FROM users WHERE email = %s",
