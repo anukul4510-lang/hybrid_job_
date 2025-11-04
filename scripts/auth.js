@@ -88,12 +88,20 @@ if (registerRoleSelect && companyNameGroup && companyNameInput) {
 }
 
 // Handle login form submission
-if (loginForm) {
+function initializeLoginForm() {
+    const loginForm = document.getElementById('login-form');
+    if (!loginForm) return;
+    
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+            alert('Please enter both email and password.');
+            return;
+        }
 
         try {
             const response = await apiClient.login({ email, password });
@@ -195,6 +203,9 @@ function initializeRegistrationForm() {
 document.addEventListener('DOMContentLoaded', () => {
     // Re-initialize elements
     initializeElements();
+    
+    // Initialize login form
+    initializeLoginForm();
     
     // Initialize phone validation
     initializePhoneValidation();

@@ -161,6 +161,10 @@ class ApiClient {
         return this.request(`/jobseeker/recommendations?limit=${limit}`);
     }
 
+    async getJobSuggestions(limit = 15) {
+        return this.request(`/jobseeker/recommendations?limit=${limit}`);
+    }
+
     // Recruiter endpoints
     async createJob(jobData) {
         return this.request('/recruiter/jobs', {

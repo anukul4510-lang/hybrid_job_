@@ -39,10 +39,10 @@ function showHome() {
                     <h3>Browse Jobs</h3>
                     <p>Find opportunities</p>
                 </div>
-                <div class="quick-action-card" onclick="showRecommendations()">
+                <div class="quick-action-card" onclick="showJobSuggestions()">
                     <div class="action-icon">✨</div>
-                    <h3>AI Matches</h3>
-                    <p>Get recommendations</p>
+                    <h3>Job Suggestions</h3>
+                    <p>AI-powered matches</p>
                 </div>
             </div>
         </div>
@@ -858,46 +858,346 @@ async function removeSkill(skillId, event) {
 /**
  * Show AI recommendations
  */
-async function showRecommendations() {
+/**
+ * Show job suggestions based on profile and skills
+ * Excludes already applied jobs and shows match scores
+ */
+async function showJobSuggestions(event = null) {
+    // Prevent page reload if event is provided
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const content = document.getElementById('content');
-    content.innerHTML = '<h2>AI Job Recommendations</h2>';
+    if (!content) {
+        console.error('Content element not found');
+        return;
+    }
+    
+    content.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <h2>💡 Job Suggestions</h2>
+            <p style="opacity: 0.9; margin-bottom: 15px;">
+                AI-powered job recommendations based on your profile, skills, and preferences. 
+                Jobs you've already applied to are automatically excluded.
+            </p>
+        </div>
+    `;
     
     const loader = createLoader();
     content.appendChild(loader);
     
     try {
-        const recommendations = await apiClient.getJobRecommendations();
-        
-        if (!recommendations || recommendations.length === 0) {
-            content.innerHTML = '<p>No recommendations available. Add skills to your profile for better recommendations.</p>';
+        // Get user profile and skills info
+        let profile, skillsResponse, applications;
+        try {
+            [profile, skillsResponse, applications] = await Promise.all([
+                apiClient.getProfile().catch((e) => {
+                    console.warn('Failed to get profile:', e);
+                    return null;
+                }),
+                apiClient.getMySkills().catch((e) => {
+                    console.error('Failed to get skills:', e);
+                    console.error('Error details:', e.message, e.stack);
+                    // Return empty array on error, not wrapped object
+                    return [];
+                }),
+                apiClient.getMyApplications().catch((e) => {
+                    console.warn('Failed to get applications:', e);
+                    return [];
+                })
+            ]);
+        } catch (error) {
+            console.error('Error fetching initial data:', error);
+            content.innerHTML = `
+                <div class="error-message" style="padding: 20px; background: #ffebee; 
+                            border-radius: 8px; color: #c62828;">
+                    <strong>⚠️ Failed to load data</strong><br>
+                    ${error.message || 'Please try again later.'}
+                    <br><br>
+                    <button onclick="showJobSuggestions()" class="btn btn-primary" 
+                            style="padding: 10px 20px; cursor: pointer;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
             return;
         }
         
-        const jobsHTML = recommendations.map(job => `
-            <div class="job-card">
-                <h3>${job.title}</h3>
-                <p class="company">${job.company}</p>
-                <p class="location">📍 ${job.location || 'Remote'}</p>
-                <p class="description">${job.description}</p>
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="applyToJob(${job.id})">Apply</button>
-                    <button class="btn btn-secondary" onclick="saveJob(${job.id})">Save</button>
-                    ${job.recruiter_email ? (() => {
-                        const subject = encodeURIComponent(`Inquiry about ${job.title || 'Job'} position at ${job.recruiter_company_name || job.company || 'Company'}`);
-                        const body = encodeURIComponent(`Hello,\n\nI am interested in the ${job.title || 'Job'} position at ${job.recruiter_company_name || job.company || 'Company'}. Please let me know if there are any questions about my application.\n\nThank you,\n[Your Name]`);
-                        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(job.recruiter_email)}&su=${subject}&body=${body}`;
-                        return `<a href="${gmailUrl}" target="_blank" class="btn" style="background: #EA4335; color: white; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
-                            ✉️ Contact via Gmail
-                        </a>`;
-                    })() : ''}
+        // Check if API call failed
+        if (skillsResponse === null) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+                    <h3 style="color: #0B3D91; margin-bottom: 15px;">Failed to Load Skills</h3>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        There was an error loading your skills. Please try again.
+                    </p>
+                    <button onclick="showJobSuggestions()" class="btn btn-primary" 
+                            style="padding: 12px 24px; font-size: 1.1rem; cursor: pointer;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Extract skills list - API returns array directly (same as showSkills function)
+        // From backend: returns List[dict] with fields: skill_id, skill_name, proficiency_level, etc.
+        let userSkills = [];
+        
+        // Check response format - should be an array directly
+        if (Array.isArray(skillsResponse)) {
+            userSkills = skillsResponse;
+        } else if (skillsResponse && typeof skillsResponse === 'object') {
+            // Check if wrapped in object with 'skills' property
+            if (skillsResponse.skills && Array.isArray(skillsResponse.skills)) {
+                userSkills = skillsResponse.skills;
+            } else {
+                // Try to find array in object values
+                const foundArray = Object.values(skillsResponse).find(val => Array.isArray(val));
+                if (foundArray) {
+                    userSkills = foundArray;
+                }
+            }
+        }
+        
+        // Debug logging - check browser console (F12) to see what's happening
+        console.log('=== SKILLS DEBUG ===');
+        console.log('Skills API Response:', skillsResponse);
+        console.log('Response Type:', typeof skillsResponse);
+        console.log('Is Array:', Array.isArray(skillsResponse));
+        console.log('Extracted Skills:', userSkills);
+        console.log('Skills Count:', userSkills.length);
+        if (userSkills.length > 0) {
+            console.log('First Skill Sample:', userSkills[0]);
+            console.log('All Skills:', userSkills);
+        } else {
+            console.warn('⚠️ No skills found in response!');
+            console.log('Full response object:', JSON.stringify(skillsResponse, null, 2));
+        }
+        console.log('===================');
+        
+        const hasSkills = userSkills && Array.isArray(userSkills) && userSkills.length > 0;
+        
+        // Check if user has skills
+        if (!hasSkills) {
+            // Show more detailed error message
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">🎯</div>
+                    <h3 style="color: #0B3D91; margin-bottom: 15px;">No Skills Found</h3>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        You need to add skills to your profile to get personalized job suggestions!
+                    </p>
+                    <p style="color: #888; font-size: 0.9rem; margin-bottom: 20px;">
+                        Check the browser console (F12) for debugging information.
+                    </p>
+                    <button onclick="showSkills()" class="btn btn-primary" 
+                            style="padding: 12px 24px; font-size: 1.1rem; cursor: pointer; margin-right: 10px;">
+                        ➕ Add Skills Now
+                    </button>
+                    <button onclick="showJobSuggestions()" class="btn btn-secondary" 
+                            style="padding: 12px 24px; font-size: 1.1rem; cursor: pointer;">
+                        🔄 Refresh
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Get recommended jobs
+        let response;
+        try {
+            response = await apiClient.getJobSuggestions(15);
+        } catch (apiError) {
+            console.error('Failed to get job suggestions:', apiError);
+            content.innerHTML = `
+                <div class="error-message" style="padding: 20px; background: #ffebee; 
+                            border-radius: 8px; color: #c62828;">
+                    <strong>⚠️ Failed to load job suggestions</strong><br>
+                    ${apiError.message || 'Please try again later.'}
+                    <br><br>
+                    <button onclick="showJobSuggestions()" class="btn btn-primary" 
+                            style="padding: 10px 20px; cursor: pointer;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        const recommendations = response?.recommended_jobs || response || [];
+        
+        // Get applied job IDs
+        const appliedJobIds = new Set();
+        if (applications && Array.isArray(applications)) {
+            applications.forEach(app => {
+                appliedJobIds.add(app.job_id);
+            });
+        } else if (applications && applications.applications && Array.isArray(applications.applications)) {
+            applications.applications.forEach(app => {
+                appliedJobIds.add(app.job_id);
+            });
+        }
+        
+        // Filter out already applied jobs
+        const suggestedJobs = recommendations.filter(job => !appliedJobIds.has(job.id));
+        
+        if (suggestedJobs.length === 0) {
+            let message = 'No job suggestions available at this time.';
+            let tip = '';
+            
+            if (recommendations.length === 0) {
+                tip = '<br><br>💡 <strong>Tip:</strong> Make sure there are active job postings in the system that match your skills.';
+            } else if (appliedJobIds.size > 0 && recommendations.length === appliedJobIds.size) {
+                tip = '<br><br>You\'ve already applied to all suggested jobs. Check back later for new opportunities!';
+            } else {
+                tip = '<br><br>💡 <strong>Tip:</strong> Try updating your profile or adding more skills to get better matches.';
+            }
+            
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">🎯</div>
+                    <h3 style="color: #0B3D91; margin-bottom: 15px;">No Suggestions Available</h3>
+                    <p style="color: #666;">${message}</p>
+                    <p style="color: #888; margin-top: 15px;">${tip}</p>
+                    <div style="margin-top: 30px;">
+                        <button onclick="showSkills()" class="btn btn-secondary" 
+                                style="padding: 10px 20px; margin-right: 10px; cursor: pointer;">
+                            🎯 Update Skills
+                        </button>
+                        <button onclick="showBrowseJobs()" class="btn btn-primary" 
+                                style="padding: 10px 20px; cursor: pointer;">
+                            🔍 Browse All Jobs
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Display profile summary - use same format as showSkills function
+        const skillsList = hasSkills ? userSkills.map(s => {
+            // Skills have: skill_id, skill_name, proficiency_level
+            const skillName = s.skill_name || s.name || (typeof s === 'string' ? s : 'Unknown');
+            return skillName;
+        }).join(', ') : 'No skills added';
+        
+        console.log('Skills List for Display:', skillsList);
+        const jobOfChoice = profile?.job_of_choice || 'Not specified';
+        const userLocation = profile?.location || 'Not specified';
+        
+        const profileSummary = `
+            <div style="background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); 
+                        padding: 20px; border-radius: 12px; margin-bottom: 25px; 
+                        border: 2px solid rgba(65, 105, 225, 0.2);">
+                <h3 style="color: #0B3D91; margin-bottom: 15px;">📋 Your Profile Summary</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Job Preference:</strong><br>
+                        <span style="color: #666;">${jobOfChoice}</span>
+                    </div>
+                    <div>
+                        <strong>Location:</strong><br>
+                        <span style="color: #666;">${userLocation}</span>
+                    </div>
+                    <div>
+                        <strong>Your Skills:</strong><br>
+                        <span style="color: #666; font-size: 0.9rem;">${skillsList || 'None added'}</span>
+                    </div>
                 </div>
             </div>
-        `).join('');
+        `;
         
-        content.innerHTML = '<h2>AI Job Recommendations</h2>' + jobsHTML;
+        // Create job cards with match scores
+        const jobsHTML = suggestedJobs.map(job => {
+            const matchScore = job.match_score || job.similarity_score || 0;
+            const matchColor = matchScore >= 70 ? '#4CAF50' : matchScore >= 50 ? '#FF9800' : '#9E9E9E';
+            const matchLabel = matchScore >= 70 ? 'Excellent Match' : matchScore >= 50 ? 'Good Match' : 'Fair Match';
+            
+            const recruiterEmailBtn = job.recruiter_email ? (() => {
+                const subject = encodeURIComponent(`Inquiry about ${job.title || 'Job'} position at ${job.company || 'Company'}`);
+                const body = encodeURIComponent(`Hello,\n\nI am interested in the ${job.title || 'Job'} position at ${job.company || 'Company'}. Please let me know if there are any questions.\n\nThank you!`);
+                const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(job.recruiter_email)}&su=${subject}&body=${body}`;
+                return `<a href="${gmailUrl}" target="_blank" class="btn" 
+                         style="background: #EA4335; color: white; text-decoration: none; 
+                                padding: 10px 20px; border-radius: 8px; border: none; 
+                                cursor: pointer; font-weight: 600;">
+                    ✉️ Contact
+                </a>`;
+            })() : '';
+            
+            return `
+                <div class="job-card" style="position: relative;">
+                    <div style="position: absolute; top: 15px; right: 15px; 
+                                background: ${matchColor}; color: white; 
+                                padding: 8px 16px; border-radius: 20px; 
+                                font-weight: 600; font-size: 0.9rem; 
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                        ${matchScore.toFixed(0)}% Match
+                        <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 2px;">
+                            ${matchLabel}
+                        </div>
+                    </div>
+                    <h3 style="margin-right: 150px;">${job.title || 'Job Title'}</h3>
+                    <p class="company" style="font-weight: 600; color: #4169E1; font-size: 1.1rem;">
+                        ${job.company || 'Company'}
+                    </p>
+                    <p class="location">📍 ${job.location || 'Location not specified'}</p>
+                    <p class="description" style="margin: 15px 0;">
+                        ${job.description ? (job.description.substring(0, 200) + (job.description.length > 200 ? '...' : '')) : 'No description available'}
+                    </p>
+                    ${job.min_salary || job.max_salary ? `
+                        <p style="color: #4CAF50; font-weight: 600; margin: 10px 0;">
+                            💰 Salary: $${job.min_salary ? job.min_salary.toLocaleString() : 'N/A'} - 
+                            $${job.max_salary ? job.max_salary.toLocaleString() : 'N/A'}
+                        </p>
+                    ` : ''}
+                    <p style="color: #666; font-size: 0.9rem; margin: 10px 0;">
+                        <strong>Type:</strong> ${job.employment_type || 'Full-time'} | 
+                        <strong>Posted:</strong> ${job.posted_date ? new Date(job.posted_date).toLocaleDateString() : 'Recently'}
+                    </p>
+                    <div class="actions" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="applyToJob(${job.id})" 
+                                style="flex: 1; min-width: 120px;">
+                            🚀 Apply Now
+                        </button>
+                        <button class="btn btn-secondary" onclick="saveJob(${job.id})" 
+                                style="flex: 1; min-width: 120px;">
+                            ⭐ Save Job
+                        </button>
+                        ${recruiterEmailBtn}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        content.innerHTML = profileSummary + '<div id="suggestions-grid" style="display: grid; gap: 20px;">' + jobsHTML + '</div>';
+        
+        // Refresh applications display if on that page
+        if (window.currentSection === 'applications') {
+            showMyApplications();
+        }
+        
     } catch (error) {
-        content.innerHTML = '<div class="error-message">Failed to load recommendations: ' + error.message + '</div>';
+        console.error('Error loading job suggestions:', error);
+        content.innerHTML = `
+            <div class="error-message" style="padding: 20px; background: #ffebee; 
+                        border-radius: 8px; color: #c62828;">
+                <strong>⚠️ Failed to load job suggestions</strong><br>
+                ${error.message || 'Please try again later.'}
+            </div>
+        `;
     }
+}
+
+/**
+ * Legacy function name for backward compatibility
+ */
+async function showRecommendations() {
+    await showJobSuggestions();
 }
 
 /**
@@ -1979,6 +2279,7 @@ window.showMyApplications = showMyApplications;
 window.showSavedJobs = showSavedJobs;
 window.showSkills = showSkills;
 window.showRecommendations = showRecommendations;
+window.showJobSuggestions = showJobSuggestions;
 window.createProfile = createProfile;
 window.updateProfile = updateProfile;
 window.applyToJob = applyToJob;

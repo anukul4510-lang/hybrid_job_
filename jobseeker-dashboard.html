@@ -307,7 +307,7 @@
                 <button onclick="showBrowseJobs()">Browse Jobs</button>
                 <button onclick="showMyApplications()">My Applications</button>
                 <button onclick="showSavedJobs()">Saved Jobs</button>
-                <button onclick="showRecommendations()">AI Recommendations</button>
+                <button onclick="showJobSuggestions(event)">💡 Job Suggestions</button>
             </div>
 
             <div class="content-area" id="content">
@@ -336,10 +336,10 @@
                             <h3>Browse Jobs</h3>
                             <p>Find opportunities</p>
                         </div>
-                        <div class="quick-action-card" onclick="showRecommendations()">
-                            <div class="action-icon">✨</div>
-                            <h3>AI Matches</h3>
-                            <p>Get recommendations</p>
+                        <div class="quick-action-card" onclick="showJobSuggestions(event)">
+                            <div class="action-icon">💡</div>
+                            <h3>Job Suggestions</h3>
+                            <p>AI-powered matches</p>
                         </div>
                     </div>
                 </div>
