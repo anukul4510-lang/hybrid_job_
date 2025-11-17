@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 import time
 import config
 import difflib
+import mysql.connector
 
 # Suppress warnings from gRPC/ALTS before importing Google AI
 warnings.filterwarnings('ignore', category=UserWarning)

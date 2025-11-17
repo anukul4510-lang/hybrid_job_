@@ -5,16 +5,12 @@ Authentication service with JWT and password hashing.
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 import config
 from backend.database.mysql_connection import MySQLConnection
 from backend.models.auth_models import UserCreate, UserLogin, TokenData
 import mysql.connector
 import re
-
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Country code to phone number validation rules
 COUNTRY_PHONE_RULES: Dict[str, Dict] = {
@@ -95,13 +91,30 @@ def validate_phone_number(phone: str) -> tuple:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against a hash."""
+    # Bcrypt has a 72 byte limit, truncate by bytes if necessary
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    
+    # Handle both string and bytes hash formats
+    if isinstance(hashed_password, str):
+        hashed_password = hashed_password.encode('utf-8')
+    
+    return bcrypt.checkpw(password_bytes, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return pwd_context.hash(password)
+    # Bcrypt has a 72 byte limit, truncate by bytes if necessary
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    
+    # Generate salt and hash the password
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

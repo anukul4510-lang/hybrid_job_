@@ -1,276 +1,159 @@
-# Quick Reference - Hybrid Job System Upgrade
+# 🚀 Quick Reference - React Frontend
 
-## 🚀 Start the System
+## Installation (One Time)
 
 ```bash
-# 1. Start backend
-python run.py
+# Option 1: Double-click
+install-frontend.bat
 
-# 2. Open frontend
-# http://127.0.0.1:5500
+# Option 2: Manual
+cd frontend
+npm install
 ```
 
----
+## Start Servers
 
-## 🔑 Login Credentials
+```bash
+# Option 1: Double-click
+start-servers.bat
 
-**Admin Account (Auto-created):**
-```
-Email: admin@gmail.com
-Password: 12345678
-```
-
-**Test Accounts:** Create your own via registration
-
----
-
-## 📝 New Registration Fields
-
-When registering, you can now provide:
-- ✅ Email (required)
-- ✅ Password (required)
-- ✅ Role (required)
-- ✅ First Name
-- ✅ Last Name
-- ✅ Phone
-- ✅ Location
-
-All optional fields auto-populate your profile!
-
----
-
-## 🎯 Key Features Quick Access
-
-### For Job Seekers
-
-**Skills Management (Enhanced):**
-```
-1. Go to "My Skills"
-2. Type skill name in search box (e.g., "python")
-3. See real-time recommendations
-4. Click "Add" or select from popular skills
-5. No dropdown limitation!
+# Option 2: Manual (2 terminals)
+Terminal 1: python run.py
+Terminal 2: cd frontend && npm run dev
 ```
 
-**Resume Management (API Ready):**
+## URLs
+
+- **Frontend**: http://localhost:5173
+- **Backend**: http://127.0.0.1:8000
+- **API Docs**: http://127.0.0.1:8000/api/docs
+
+## Test Accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Job Seeker | anukul450@gmail.com | 12345678 |
+| Recruiter | techcorp2024@gmail.com | 12345678 |
+| Admin | admin@gmail.com | 12345678 |
+
+## Common Commands
+
+```bash
+# Install dependencies
+cd frontend && npm install
+
+# Start development server
+cd frontend && npm run dev
+
+# Build for production
+cd frontend && npm run build
+
+# Preview production build
+cd frontend && npm run preview
+```
+
+## File Locations
+
+| What | Where |
+|------|-------|
+| Pages | `frontend/src/pages/` |
+| Components | `frontend/src/components/` |
+| API Service | `frontend/src/services/api.js` |
+| Auth Context | `frontend/src/contexts/AuthContext.jsx` |
+| Theme Config | `frontend/src/App.jsx` |
+| Backend CORS | `backend/main.py` |
+
+## Quick Customization
+
+### Change Colors
+Edit `frontend/src/App.jsx`:
 ```javascript
-// In browser console:
-await apiClient.createResume("My Resume", "Content here");
-await apiClient.getResumes();
+primary: { main: '#6366f1' },  // Your color here
+secondary: { main: '#ec4899' }, // Your color here
 ```
 
-**Application Filtering (API Ready):**
+### Change API URL
+Edit `frontend/src/services/api.js`:
 ```javascript
-// Filter by status
-await apiClient.searchApplications("pending", null);
-// Filter by company
-await apiClient.searchApplications(null, "Google");
+const API_BASE_URL = 'YOUR_API_URL';
 ```
 
-### For Recruiters
-
-**Advanced Candidate Search (API Ready):**
-```javascript
-// Natural language search
-await apiClient.searchCandidates("python developer in NYC");
-
-// View candidate profile
-await apiClient.getCandidateProfile(userId);
+### Change App Title
+Edit `frontend/index.html`:
+```html
+<title>Your Title Here</title>
 ```
 
-**Example Queries:**
-- "Senior Python developer with 5+ years"
-- "Frontend engineer React Next.js remote"
-- "Data scientist machine learning San Francisco"
+## Troubleshooting
 
-### For Admins
+| Problem | Solution |
+|---------|----------|
+| Port in use | Vite will use next port (5174, 5175...) |
+| CORS error | Restart backend, check `backend/main.py` |
+| Module not found | Run `npm install` in frontend folder |
+| Blank page | Check browser console (F12) |
+| Login fails | Check backend is running on port 8000 |
 
-**Quick Actions:**
+## Browser DevTools
+
+- **Open**: Press `F12` or `Ctrl+Shift+I`
+- **Console**: See JavaScript errors
+- **Network**: See API requests
+- **Elements**: Inspect HTML/CSS
+
+## Keyboard Shortcuts
+
+| Action | Shortcut |
+|--------|----------|
+| Hard Refresh | `Ctrl+Shift+R` or `Ctrl+F5` |
+| Open DevTools | `F12` or `Ctrl+Shift+I` |
+| Clear Console | `Ctrl+L` (in DevTools) |
+
+## Project Structure
+
 ```
-1. Login: admin@gmail.com / 12345678
-2. View Stats: Automatic on login
-3. Manage Users: Click user → Update role or Disable
-4. View Logs: See all admin actions
-5. Delete Jobs: Admin override on any job
+frontend/
+├── src/
+│   ├── components/     # Reusable components
+│   ├── contexts/       # State management
+│   ├── pages/         # Page components
+│   ├── services/      # API integration
+│   └── App.jsx        # Main app
+├── index.html
+├── package.json
+└── vite.config.js
 ```
+
+## Documentation Files
+
+1. **GETTING_STARTED_REACT.md** - Complete setup guide
+2. **REACT_FRONTEND_SUMMARY.md** - Full feature overview
+3. **SETUP_CHECKLIST.md** - Step-by-step checklist
+4. **frontend/README.md** - Frontend-specific docs
+5. **QUICK_REFERENCE.md** - This file!
+
+## Tech Stack
+
+- React 18.2
+- Vite 5.0
+- Material-UI 5.14
+- React Router 6.20
+- Axios 1.6
+- Framer Motion 10.16
+- React Toastify 9.1
+
+## Need More Help?
+
+1. Check `GETTING_STARTED_REACT.md` for detailed guide
+2. Check `SETUP_CHECKLIST.md` for troubleshooting
+3. Open browser console (F12) for error details
+4. Check both terminal windows for errors
 
 ---
 
-## 🔧 API Endpoints Cheat Sheet
-
-### Skills
-```
-GET  /api/jobseeker/skills/recommendations?query=python
-POST /api/jobseeker/skills/create?skill_name=NewSkill
-```
-
-### Resumes
-```
-POST   /api/jobseeker/resumes?title=MyResume&content=...
-GET    /api/jobseeker/resumes
-PUT    /api/jobseeker/resumes/{id}
-DELETE /api/jobseeker/resumes/{id}
-PUT    /api/jobseeker/resumes/{id}/primary
-```
-
-### Applications
-```
-GET /api/jobseeker/applications/search?status=pending&company=Google
-```
-
-### Recruiter
-```
-GET /api/recruiter/users/search?query=python+developer
-GET /api/recruiter/users/{userId}
-```
-
-### Admin
-```
-GET    /api/admin/users
-GET    /api/admin/stats
-PUT    /api/admin/users/{id}/role
-PUT    /api/admin/users/{id}/status?action=disable
-DELETE /api/admin/users/{id}
-GET    /api/admin/logs
-GET    /api/admin/jobs
-DELETE /api/admin/jobs/{id}
-```
-
----
-
-## 🧪 Quick Tests
-
-### Test Registration
-```
-1. Go to index.html
-2. Click "Register"
-3. Fill ALL fields (now includes name, phone, location)
-4. Submit → Profile auto-created
-5. Login → See pre-populated profile
-```
-
-### Test Skills
-```
-1. Login as job seeker
-2. Go to "My Skills"
-3. Type "java" → See recommendations
-4. Click any skill or type custom → Added
-```
-
-### Test Resume (Console)
-```javascript
-// Create
-const r = await apiClient.createResume("Software Engineer", "My experience...");
-// List
-const all = await apiClient.getResumes();
-// Set primary
-await apiClient.setPrimaryResume(all[0].id);
-```
-
-### Test Candidate Search (Console)
-```javascript
-const results = await apiClient.searchCandidates(
-  "python developer", 
-  "New York", 
-  5
-);
-console.log(results.filters_applied); // AI parsed filters
-console.log(results.results); // Matching candidates
-```
-
-### Test Admin
-```
-1. Login: admin@gmail.com / 12345678
-2. Console: await apiClient.getStats()
-3. Should see user counts, job counts, etc.
-```
-
----
-
-## 💡 Pro Tips
-
-**Skills:**
-- Type partial names: "py" finds "python"
-- Popular skills show user counts
-- Custom skills are saved for everyone
-
-**Search:**
-- Use natural language: "remote python jobs"
-- System understands location, skills, experience
-- Results ranked by relevance
-
-**Admin:**
-- All actions are logged (audit trail)
-- Disable rather than delete (safer)
-- Activity logs show who did what
-
----
-
-## 🐛 Common Issues
-
-**Q: Can't login as admin?**
-```
-A: Server creates admin on startup. Check console:
-   "Default admin account created: admin@gmail.com / 12345678"
-```
-
-**Q: Skills recommendations not appearing?**
-```
-A: Check .env file has GEMINI_API_KEY
-   Fallback: System shows popular skills instead
-```
-
-**Q: Registration fails?**
-```
-A: Optional fields can be left empty
-   Only email, password, role are required
-```
-
-**Q: How to test resume features?**
-```
-A: Use API client in console (UI integration optional)
-   await apiClient.createResume("Title", "Content")
-```
-
----
-
-## 📋 Feature Checklist
-
-✅ **Working Now:**
-- Enhanced registration
-- Dynamic skills with recommendations
-- Job search (already working)
-- Resume CRUD (backend + API)
-- Application filtering (backend + API)
-- Candidate search (backend + API)
-- Admin panel (backend + partial UI)
-- Default admin account
-
-🔶 **Needs UI Integration:**
-- Resume management interface
-- Candidate search interface
-- Application filter buttons
-- Admin action buttons
-
----
-
-## 🎯 Most Important Changes
-
-1. **Registration** → Now captures profile info
-2. **Skills** → Type anything, get recommendations
-3. **Admin Account** → admin@gmail.com / 12345678 created automatically
-4. **APIs** → All endpoints ready for frontend integration
-
----
-
-## 📞 Quick Help
-
-**Start Here:** UPGRADE_COMPLETE.md
-**Detailed Docs:** UPGRADE_FEATURES.md
-**Setup Issues:** TROUBLESHOOTING.md
-**Architecture:** ARCHITECTURE.md
-
----
-
-**That's it! Your system is upgraded and ready to use! 🚀**
-
+**Quick Start Summary:**
+1. Run `install-frontend.bat`
+2. Run `start-servers.bat`
+3. Open `http://localhost:5173`
+4. Login with test account
+5. Enjoy! 🎉

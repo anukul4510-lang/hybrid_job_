@@ -3,7 +3,7 @@ Recruiter API routes.
 Handles job posting management and application review.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional
 from backend.models.job_models import (
     JobPostingCreate, JobPostingUpdate
@@ -267,10 +267,10 @@ async def get_candidate_profile(
 # Shortlist endpoints
 @router.post("/shortlist")
 async def add_to_shortlist(
-    candidate_id: int,
-    job_id: int = None,
-    match_score: float = None,
-    notes: str = None,
+    candidate_id: int = Query(...),
+    job_id: int = Query(None),
+    match_score: float = Query(None),
+    notes: str = Query(None),
     current_user: TokenData = Depends(get_current_recruiter)
 ):
     """Add a candidate to shortlist."""
